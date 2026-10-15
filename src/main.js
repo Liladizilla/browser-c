@@ -427,7 +427,7 @@ function closeTab(id = activeTabId) {
 }
 function createWindow() {
   windowRef = new BrowserWindow({
-    width: 1280, height: 840, minWidth: 520, minHeight: 480, title: "Browser C", backgroundColor: "#101214",
+    width: 1280, height: 840, minWidth: 520, minHeight: 480, title: "Browser C", backgroundColor: "#101214", frame: false,
     webPreferences: { preload: path.join(here, "preload.cjs"), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false }
   });
   const chromePath = path.join(here, "renderer", "index.html");
@@ -435,7 +435,9 @@ function createWindow() {
   windowRef.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   windowRef.webContents.on("will-navigate", (event, url) => { if (url !== chromeUrl) event.preventDefault(); });
   windowRef.webContents.on("will-redirect", (event, url) => { if (url !== chromeUrl) event.preventDefault(); });
-  windowRef.on("resize", layoutTabs);
+  windowRef.on("resize", () => { layoutTabs(); sendState(); });
+  windowRef.on("maximize", () => sendState());
+  windowRef.on("unmaximize", () => sendState());
   windowRef.on("closed", () => {
     const savedTabs = persistableTabs(tabs, isWebUrl, 20).map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }));
     lastSessionSnapshot = {
@@ -813,6 +815,60 @@ function createWindow() {
   }
   windowRef.loadFile(chromePath);
 }
+function isTrustedChromeEvent(event) {
+  return Boolean(windowRef && !windowRef.isDestroyed() && event.sender === windowRef.webContents);
+}
+ipcMain.handle("browser:window:minimize", (event) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted window-control request." };
+  windowRef.minimize();
+  return { ok: true };
+});
+ipcMain.handle("browser:window:toggle-maximize", (event) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted window-control request." };
+  if (windowRef.isMaximized()) windowRef.unmaximize();
+  else windowRef.maximize();
+  return { ok: true, maximized: windowRef.isMaximized() };
+});
+ipcMain.handle("browser:window:close", (event) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted window-control request." };
+  windowRef.close();
+  return { ok: true };
+});
+ipcMain.handle("browser:page:print", async (event) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted print request." };
+  const tab = activeTab();
+  if (!tab) return { ok: false, error: "There is no active page to print." };
+  return await new Promise((resolve) => {
+    tab.view.webContents.print({ silent: false, printBackground: true }, (success, failureReason) => {
+      resolve(success ? { ok: true } : { ok: false, error: failureReason || "Printing was cancelled or failed." });
+    });
+  });
+});
+ipcMain.handle("browser:page:save-as", async (event) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted save request." };
+  const tab = activeTab();
+  if (!tab || !isWebUrl(tab.url)) return { ok: false, error: "There is no web page to save." };
+  const safeTitle = String(tab.title || "webpage").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 100) || "webpage";
+  const result = await dialog.showSaveDialog(windowRef, {
+    title: "Save webpage",
+    defaultPath: path.join(app.getPath("downloads"), safeTitle + ".html"),
+    filters: [{ name: "Web page, complete", extensions: ["html"] }, { name: "HTML only", extensions: ["htm", "html"] }]
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  try {
+    await tab.view.webContents.savePage(result.filePath, "HTMLComplete");
+    return { ok: true, path: result.filePath };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not save this page." };
+  }
+});
+ipcMain.handle("browser:page:devtools", (event) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted developer-tools request." };
+  const tab = activeTab();
+  if (!tab) return { ok: false, error: "There is no active tab." };
+  tab.view.webContents.openDevTools({ mode: "detach" });
+  return { ok: true };
+});
 ipcMain.handle("browser:navigate", async (_event, input) => {
   try { return { ok: true, url: await navigate(input) }; }
   catch (error) { return { ok: false, error: error instanceof Error ? error.message : "Navigation failed." }; }
