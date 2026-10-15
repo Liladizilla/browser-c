@@ -8,6 +8,8 @@ const packages = await readFile(new URL("../.github/workflows/packages.yml", imp
 const packageSmoke = await readFile(new URL("../.github/workflows/package-smoke.yml", import.meta.url), "utf8");
 const crossPlatformPackageSmoke = await readFile(new URL("../.github/workflows/package-smoke-cross-platform.yml", import.meta.url), "utf8");
 const smoke = await readFile(new URL("../scripts/smoke-electron.mjs", import.meta.url), "utf8");
+const sbomScript = await readFile(new URL("../scripts/generate-sbom.mjs", import.meta.url), "utf8");
+const mainSource = await readFile(new URL("../src/main.js", import.meta.url), "utf8");
 const collector = await readFile(new URL("../scripts/collect-release-artifacts.mjs", import.meta.url), "utf8");
 const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const lock = JSON.parse(await readFile(new URL("../package-lock.json", import.meta.url), "utf8"));
@@ -114,4 +116,14 @@ test("Windows and macOS package smoke builds and inspects distributable artifact
   assert.ok(crossPlatformPackageSmoke.includes("Windows NSIS installer is missing or empty"));
   assert.ok(crossPlatformPackageSmoke.includes("Contents/Resources/app.asar"));
   assert.ok(crossPlatformPackageSmoke.includes("if-no-files-found: error"));
+});
+
+test("SBOM generation resolves the npm command on Windows runners", () => {
+  assert.ok(sbomScript.includes('process.platform === "win32" ? "npm.cmd" : "npm"'));
+  assert.ok(sbomScript.includes("spawnSync(npmCommand"));
+});
+
+test("cross-platform smoke allows macOS more time to report background navigation failures", () => {
+  assert.ok(mainSource.includes('"background navigation failure", 15000'));
+  assert.ok(mainSource.includes('Math.ceil(timeoutMs / 50)'));
 });
