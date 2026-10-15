@@ -50,7 +50,7 @@ function sendState(patch = {}) {
   const tab = activeTab();
   windowRef.webContents.send("browser:state", {
     tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
-    loading: Boolean(tab?.loading), canGoBack: Boolean(tab && canGoBack(tab.view.webContents)),
+    loading: Boolean(tab?.loading), error: tab?.error ?? "", canGoBack: Boolean(tab && canGoBack(tab.view.webContents)),
     canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
     zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, ...patch
   });
@@ -136,7 +136,7 @@ async function navigate(rawInput, tabId = activeTabId) {
   if (!tab) throw new Error("The selected tab no longer exists.");
   const destination = resolveAddress(rawInput);
   if (!isWebUrl(destination)) throw new TypeError("Only HTTP and HTTPS destinations are allowed.");
-  tab.url = destination; tab.loading = true; sendState();
+  tab.url = destination; tab.loading = true; tab.error = ""; sendState();
   await tab.view.webContents.loadURL(destination);
   scheduleSessionSave();
   return destination;
@@ -268,7 +268,7 @@ function attachTabEvents(tab) {
   contents.on("will-redirect", (event, url) => { if (!isWebUrl(url)) event.preventDefault(); });
   contents.on("did-start-navigation", (_event, url, _inPlace, isMainFrame) => {
     if (isMainFrame && isWebUrl(url)) tab.url = url;
-    tab.loading = true; sendState({ error: "" });
+    tab.loading = true; tab.error = ""; sendState();
   });
   contents.on("page-title-updated", (_event, title) => {
     tab.title = title || "New Tab";
@@ -283,7 +283,7 @@ function attachTabEvents(tab) {
   });
   contents.on("did-navigate-in-page", (_event, url) => { tab.url = url; sendState(); scheduleSessionSave(); });
   contents.on("did-finish-load", () => {
-    tab.url = contents.getURL(); tab.title = contents.getTitle() || "New Tab"; tab.loading = false; sendState({ error: "" });
+    tab.url = contents.getURL(); tab.title = contents.getTitle() || "New Tab"; tab.loading = false; tab.error = ""; sendState();
   });
   contents.on("did-stop-loading", () => {
     tab.loading = false;
@@ -292,7 +292,8 @@ function attachTabEvents(tab) {
   contents.on("did-fail-load", (_event, code, description, validatedURL, isMainFrame) => {
     if (isMainFrame && code !== -3) {
       tab.loading = false;
-      if (tab.id === activeTabId) sendState({ error: description, url: validatedURL });
+      tab.error = description || "The page could not be loaded.";
+      if (tab.id === activeTabId) sendState({ url: validatedURL });
     }
   });
   contents.on("before-input-event", (event, input) => {
@@ -325,13 +326,14 @@ function createTab(url = "https://www.google.com/", privateMode = false) {
     contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true,
     allowRunningInsecureContent: false, navigateOnDragDrop: false, partition
   }});
-  const tab = { id, view, url, title: privateMode ? "Private tab" : "New Tab", loading: true, isPrivate: privateMode };
+  const tab = { id, view, url, title: privateMode ? "Private tab" : "New Tab", loading: true, error: "", isPrivate: privateMode };
   if (privateMode) privateSessions.add(view.webContents.session);
   tabs.push(tab); windowRef.contentView.addChildView(view); attachTabEvents(tab);
   activeTabId = id; layoutTabs();
   view.webContents.loadURL(url).catch(() => {
     tab.loading = false;
-    if (tab.id === activeTabId) sendState({ error: "The page could not be loaded." });
+    tab.error ||= "The page could not be loaded.";
+    if (tab.id === activeTabId) sendState();
   });
   sendState(); scheduleSessionSave();
   return tabSnapshot(tab);
@@ -617,7 +619,7 @@ ipcMain.handle("browser:get-state", () => {
   const tab = activeTab();
   return { tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     canGoBack: Boolean(tab && canGoBack(tab.view.webContents)), canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
-    loading: Boolean(tab?.loading), zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1 };
+    loading: Boolean(tab?.loading), error: tab?.error ?? "", zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1 };
 });
 ipcMain.handle("browser:bookmarks:get", () => profile.bookmarks);
 ipcMain.handle("browser:bookmarks:toggle", async (_event, item) => {
