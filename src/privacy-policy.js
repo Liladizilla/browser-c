@@ -11,8 +11,8 @@ export function shouldRecordHistory(tab, isWebUrl) {
 }
 
 export function shouldPersistCompletedDownload(download) {
-  return Boolean(download && !download.isPrivate && download.state === "completed"
-    && typeof download.savePath === "string");
+  return Boolean(download && download.isPrivate === false && download.state === "completed"
+    && typeof download.savePath === "string" && download.savePath.trim().length > 0);
 }
 
 export function shouldCancelDownloadOnTabClose(download) {
