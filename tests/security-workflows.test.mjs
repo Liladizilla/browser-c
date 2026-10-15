@@ -22,7 +22,7 @@ test("secret scanning runs on pushes, pull requests, and schedule", () => {
   assert.ok(secrets.includes("pull_request:"));
   assert.ok(secrets.includes("schedule:"));
   assert.ok(secrets.includes("fetch-depth: 0"));
-  assert.ok(secrets.includes("gitleaks/gitleaks-action@v2.3.9"));
+  assert.ok(secrets.includes("gitleaks/gitleaks-action@v3"));
 });
 
 test("secret scanning has read-only repository permissions", () => {
@@ -39,7 +39,7 @@ test("desktop packages are validated before artifact provenance is attested", ()
   assert.ok(packages.includes("npm run checksums -- release/artifacts"));
   assert.ok(packages.includes("path: release/artifacts/*"));
   assert.ok(packages.includes("node scripts/validate-release.mjs ${{ matrix.platform }}"));
-  assert.ok(packages.includes("uses: actions/attest-build-provenance@v3"));
+  assert.ok(packages.includes("uses: actions/attest-build-provenance@v4"));
   assert.ok(packages.includes("subject-path:"));
   assert.ok(packages.includes("id-token: write"));
   assert.ok(packages.includes("attestations: write"));
