@@ -116,15 +116,15 @@ test("download event listeners are attached before the save dialog await", () =>
 test("private tabs use unique non-persistent partitions and never enter saved sessions", () => {
   assert.match(main, /private-" \\+ randomUUID\\(\\)/);
   assert.match(main, /: "persist:browser-c"/);
-  assert.match(main, /persistableTabs\\(tabs, isWebUrl, 20\\)/);
-  assert.match(main, /shouldRecordHistory\\(tab, isWebUrl\\)/);
-  assert.match(main, /isPrivate: Boolean\\(tab\\?\\.isPrivate\\)/);
+  assert.match(main, /persistableTabs\(tabs, isWebUrl, 20\)/);
+  assert.match(main, /shouldRecordHistory\(tab, isWebUrl\)/);
+  assert.match(main, /isPrivate: Boolean\(tab\?\.isPrivate\)/);
 });
 test("private tabs do not persist downloads or bookmark current pages", () => {
-  assert.match(main, /shouldPersistCompletedDownload\\(download\\)/);
-  assert.match(main, /canBookmarkTab\\(activeTab\\(\\)\\)/);
-  assert.match(main, /shouldCancelDownloadOnTabClose\\(download\\)/);
-  assert.match(main, /if \\(download\\.tabId !== tab\\.id\\) continue/);
+  assert.match(main, /shouldPersistCompletedDownload\(download\)/);
+  assert.match(main, /canBookmarkTab\(activeTab\(\)\)/);
+  assert.match(main, /shouldCancelDownloadOnTabClose\(download\)/);
+  assert.match(main, /if \(download\.tabId !== tab\.id\) continue/);
 });
 test("permission grants are scoped to each Electron session", () => {
   assert.match(main, /const permissionGrants = new WeakMap\(\)/);
