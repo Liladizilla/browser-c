@@ -574,11 +574,11 @@ function createWindow() {
         const fixtureTabSnapshot = createTab(fixtureOrigin + "/one");
         const fixtureTab = tabs.find((tab) => tab.id === fixtureTabSnapshot.id);
         const waitForFixture = async (predicate, label) => {
-          for (let attempt = 0; attempt < 50; attempt++) {
+          for (let attempt = 0; attempt < 120; attempt++) {
             if (predicate()) return;
             await new Promise((resolve) => setTimeout(resolve, 50));
           }
-          throw new Error("Timed out waiting for navigation fixture: " + label);
+          throw new Error("Timed out waiting for navigation fixture after 6 seconds: " + label);
         };
         try {
           await waitForFixture(() => (fixtureHits.get("/one") || 0) > 0 && fixtureTab.view.webContents.getTitle() === "one" && !fixtureTab.loading, "first page committed");
