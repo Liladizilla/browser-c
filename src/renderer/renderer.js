@@ -11,12 +11,14 @@ const status = document.querySelector("#status");
 const bookmarkCurrent = document.querySelector("#bookmark-current");
 const showBookmarks = document.querySelector("#show-bookmarks");
 const showHistory = document.querySelector("#show-history");
+const showDownloads = document.querySelector("#show-downloads");
 const libraryPanel = document.querySelector("#library-panel");
 const libraryTitle = document.querySelector("#library-title");
 const libraryList = document.querySelector("#library-list");
 const closeLibrary = document.querySelector("#close-library");
 const clearHistory = document.querySelector("#clear-history");
 let libraryMode = "bookmarks";
+let downloadState = [];
 let currentState = { tabs: [], activeTabId: null };
 
 function renderTabs(tabs = []) {
@@ -72,34 +74,55 @@ newTab.addEventListener("click", () => api.newTab());
 async function showLibrary(mode) {
   libraryMode = mode;
   libraryPanel.hidden = false;
-  libraryTitle.textContent = mode === "bookmarks" ? "Bookmarks" : "History";
+  libraryTitle.textContent = mode === "bookmarks" ? "Bookmarks" : mode === "history" ? "History" : "Downloads";
   clearHistory.hidden = mode !== "history";
   libraryList.replaceChildren();
-  const entries = mode === "bookmarks" ? await api.getBookmarks() : await api.getHistory();
+  const entries = mode === "bookmarks" ? await api.getBookmarks() : mode === "history" ? await api.getHistory() : downloadState;
   if (!entries.length) {
     const empty = document.createElement("div");
     empty.className = "library-empty";
-    empty.textContent = mode === "bookmarks" ? "No bookmarks yet. Save a page with ☆ Bookmark." : "No browsing history yet.";
+    empty.textContent = mode === "bookmarks" ? "No bookmarks yet. Save a page with ☆ Bookmark." : mode === "history" ? "No browsing history yet." : "No downloads in this session.";
     libraryList.append(empty);
     return;
   }
   for (const entry of entries) {
     const row = document.createElement("div");
     row.className = "library-entry";
-    const open = document.createElement("button");
-    open.type = "button";
-    const title = document.createElement("span");
-    title.textContent = entry.title || entry.url;
-    const detail = document.createElement("small");
-    detail.textContent = mode === "history" && entry.visitedAt
-      ? new Date(entry.visitedAt).toLocaleString() + " · " + entry.url
-      : entry.url;
-    open.append(title, detail);
-    open.addEventListener("click", async () => {
-      libraryPanel.hidden = true;
-      await api.navigate(entry.url);
-    });
-    row.append(open);
+    if (mode === "downloads") {
+      const detail = document.createElement("div");
+      detail.className = "download-detail";
+      const title = document.createElement("strong");
+      title.textContent = entry.filename;
+      const meta = document.createElement("small");
+      const total = entry.totalBytes > 0 ? " / " + formatBytes(entry.totalBytes) : "";
+      meta.textContent = entry.state + " · " + formatBytes(entry.receivedBytes) + total;
+      detail.append(title, meta);
+      row.append(detail);
+      if (entry.state === "in-progress" || entry.state === "choosing-location") {
+        const cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.textContent = "×";
+        cancel.title = "Cancel download";
+        cancel.setAttribute("aria-label", "Cancel " + entry.filename);
+        cancel.addEventListener("click", () => api.cancelDownload(entry.id));
+        row.append(cancel);
+      }
+    } else {
+      const open = document.createElement("button");
+      open.type = "button";
+      const title = document.createElement("span");
+      title.textContent = entry.title || entry.url;
+      const detail = document.createElement("small");
+      detail.textContent = mode === "history" && entry.visitedAt
+        ? new Date(entry.visitedAt).toLocaleString() + " · " + entry.url
+        : entry.url;
+      open.append(title, detail);
+      open.addEventListener("click", async () => {
+        libraryPanel.hidden = true;
+        await api.navigate(entry.url);
+      });
+      row.append(open);
+    }
     libraryList.append(row);
   }
 }
@@ -113,6 +136,19 @@ bookmarkCurrent.addEventListener("click", async () => {
 });
 showBookmarks.addEventListener("click", () => showLibrary("bookmarks"));
 showHistory.addEventListener("click", () => showLibrary("history"));
+showDownloads.addEventListener("click", () => showLibrary("downloads"));
+function formatBytes(bytes = 0) {
+  if (bytes < 1024) return bytes + " B";
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024, unit = 0;
+  while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit++; }
+  return value.toFixed(value >= 100 ? 0 : 1) + " " + units[unit];
+}
+api.onDownloads((items) => {
+  downloadState = items;
+  if (!libraryPanel.hidden && libraryMode === "downloads") showLibrary("downloads");
+});
+api.getDownloads().then((items) => { downloadState = items; }).catch(() => {});
 closeLibrary.addEventListener("click", () => { libraryPanel.hidden = true; });
 clearHistory.addEventListener("click", async () => {
   await api.clearHistory();
