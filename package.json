@@ -14,7 +14,8 @@
     "test": "node --test",
     "validate": "node scripts/validate-repo.mjs",
     "check": "node --check src/main.js && node --check src/preload.cjs && node --check src/navigation.js && node --check src/renderer/renderer.js",
-    "smoke": "node scripts/smoke-electron.mjs"
+    "smoke": "node scripts/smoke-electron.mjs",
+    "checksums": "node scripts/write-checksums.mjs release"
   },
   "devDependencies": {
     "electron": "44.7.2"
