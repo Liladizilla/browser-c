@@ -55,16 +55,18 @@ jobs:
         run: npx --yes electron-builder@26.0.12 ${{ matrix.args }}
       - name: Stage distributable package artifacts
         run: node scripts/collect-release-artifacts.mjs ${{ matrix.platform }}
+      - name: Generate SPDX software bill of materials
+        run: node scripts/generate-sbom.mjs release/artifacts/SBOM.spdx.json
       - name: Generate SHA-256 checksums
         run: npm run checksums -- release/artifacts
-      - name: Validate package formats and checksums
+      - name: Validate package formats, SBOM, and checksums
         run: node scripts/validate-release.mjs ${{ matrix.platform }} release/artifacts
-      - name: Attest package and checksum provenance
+      - name: Attest package, SBOM, and checksum provenance
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             release/artifacts/*
-      - name: Upload package artifacts
+      - name: Upload package artifacts and dependency inventory
         uses: actions/upload-artifact@v7
         with:
           name: browser-c-${{ matrix.platform }}
