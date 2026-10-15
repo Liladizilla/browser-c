@@ -1,0 +1,75 @@
+name: Windows and macOS packaged build smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-package-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-smoke:
+    name: Build and inspect (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            os: windows-latest
+            args: --win nsis
+          - platform: macos
+            os: macos-latest
+            args: --mac dmg zip
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build platform packages
+        run: npx --yes electron-builder@26.0.12 ${{ matrix.args }}
+      - name: Stage distributable package artifacts
+        run: node scripts/collect-release-artifacts.mjs ${{ matrix.platform }}
+      - name: Generate SPDX software bill of materials
+        run: node scripts/generate-sbom.mjs release/artifacts/SBOM.spdx.json
+      - name: Generate SHA-256 checksums
+        run: npm run checksums -- release/artifacts
+      - name: Validate package formats, SBOM, and checksums
+        run: node scripts/validate-release.mjs ${{ matrix.platform }} release/artifacts
+      - name: Inspect Windows installer package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem release/artifacts -Filter *.exe | Select-Object -First 1
+          if ($null -eq $installer -or $installer.Length -le 0) { throw "Windows NSIS installer is missing or empty." }
+          Write-Host "Validated installer file: $($installer.Name) ($($installer.Length) bytes)"
+      - name: Inspect macOS application bundle from ZIP
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          archive="$(find release/artifacts -maxdepth 1 -type f -name '*.zip' -print -quit)"
+          test -n "$archive"
+          mkdir -p release/unpacked
+          ditto -x -k "$archive" release/unpacked
+          app="$(find release/unpacked -maxdepth 3 -type d -name '*.app' -print -quit)"
+          test -n "$app"
+          test -f "$app/Contents/Info.plist"
+          test -f "$app/Contents/Resources/app.asar"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist"
+      - name: Upload validated package artifacts and dependency inventory
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-c-${{ matrix.platform }}-package-smoke
+          path: release/artifacts/*
+          if-no-files-found: error
+          retention-days: 7

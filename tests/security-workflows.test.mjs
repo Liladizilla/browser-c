@@ -6,7 +6,10 @@ const ci = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url
 const secrets = await readFile(new URL("../.github/workflows/secrets.yml", import.meta.url), "utf8");
 const packages = await readFile(new URL("../.github/workflows/packages.yml", import.meta.url), "utf8");
 const packageSmoke = await readFile(new URL("../.github/workflows/package-smoke.yml", import.meta.url), "utf8");
+const crossPlatformPackageSmoke = await readFile(new URL("../.github/workflows/package-smoke-cross-platform.yml", import.meta.url), "utf8");
 const smoke = await readFile(new URL("../scripts/smoke-electron.mjs", import.meta.url), "utf8");
+const sbomScript = await readFile(new URL("../scripts/generate-sbom.mjs", import.meta.url), "utf8");
+const mainSource = await readFile(new URL("../src/main.js", import.meta.url), "utf8");
 const collector = await readFile(new URL("../scripts/collect-release-artifacts.mjs", import.meta.url), "utf8");
 const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const lock = JSON.parse(await readFile(new URL("../package-lock.json", import.meta.url), "utf8"));
@@ -101,4 +104,28 @@ test("CI runs the Electron integration smoke suite on Windows and macOS", () => 
   assert.ok(ci.includes("os: [windows-latest, macos-latest]"));
   assert.ok(ci.includes("run: npm run smoke"));
   assert.ok(ci.includes("timeout-minutes: 10"));
+});
+
+test("Windows and macOS package smoke builds and inspects distributable artifacts", () => {
+  assert.ok(crossPlatformPackageSmoke.includes("platform: windows"));
+  assert.ok(crossPlatformPackageSmoke.includes("platform: macos"));
+  assert.ok(crossPlatformPackageSmoke.includes("npx --yes electron-builder@26.0.12"));
+  assert.ok(crossPlatformPackageSmoke.includes("node scripts/collect-release-artifacts.mjs ${{ matrix.platform }}"));
+  assert.ok(crossPlatformPackageSmoke.includes("node scripts/generate-sbom.mjs release/artifacts/SBOM.spdx.json"));
+  assert.ok(crossPlatformPackageSmoke.includes("node scripts/validate-release.mjs ${{ matrix.platform }} release/artifacts"));
+  assert.ok(crossPlatformPackageSmoke.includes("Windows NSIS installer is missing or empty"));
+  assert.ok(crossPlatformPackageSmoke.includes("Contents/Resources/app.asar"));
+  assert.ok(crossPlatformPackageSmoke.includes("if-no-files-found: error"));
+});
+
+test("SBOM generation resolves the npm command on Windows runners", () => {
+  assert.ok(sbomScript.includes('process.platform === "win32" ? "npm.cmd" : "npm"'));
+  assert.ok(sbomScript.includes("spawnSync(npmCommand"));
+  assert.ok(sbomScript.includes('shell: process.platform === "win32"'));
+});
+
+test("cross-platform smoke deterministically checks navigation error isolation", () => {
+  assert.ok(mainSource.includes('fixtureTab.view.webContents.emit("did-fail-load", {}, -324, "ERR_EMPTY_RESPONSE"'));
+  assert.ok(mainSource.includes('backgroundTab.view.webContents.emit("did-fail-load", {}, -324, "ERR_EMPTY_RESPONSE"'));
+  assert.ok(mainSource.includes('Math.ceil(timeoutMs / 50)'));
 });

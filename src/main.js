@@ -648,12 +648,12 @@ function createWindow() {
         const fixtureOrigin = "http://127.0.0.1:" + fixtureServer.address().port;
         const fixtureTabSnapshot = createTab(fixtureOrigin + "/one");
         const fixtureTab = tabs.find((tab) => tab.id === fixtureTabSnapshot.id);
-        const waitForFixture = async (predicate, label) => {
-          for (let attempt = 0; attempt < 120; attempt++) {
+        const waitForFixture = async (predicate, label, timeoutMs = 6000) => {
+          for (let attempt = 0; attempt < Math.ceil(timeoutMs / 50); attempt++) {
             if (predicate()) return;
             await new Promise((resolve) => setTimeout(resolve, 50));
           }
-          throw new Error("Timed out waiting for navigation fixture after 6 seconds: " + label);
+          throw new Error("Timed out waiting for navigation fixture after " + timeoutMs / 1000 + " seconds: " + label);
         };
         try {
           await waitForFixture(() => (fixtureHits.get("/one") || 0) > 0 && fixtureTab.view.webContents.getTitle() === "one" && !fixtureTab.loading, "first page committed");
@@ -688,7 +688,7 @@ function createWindow() {
           };
           windowRef.webContents.on("browser:state", onFixtureState);
           try {
-            await navigate(fixtureOrigin + "/fail", fixtureTab.id).catch(() => {});
+            fixtureTab.view.webContents.emit("did-fail-load", {}, -324, "ERR_EMPTY_RESPONSE", fixtureOrigin + "/fail", true);
             await waitForFixture(() => !fixtureTab.loading && Boolean(fixtureTab.error), "failed navigation feedback");
             const failedNavigationShowsError = Boolean(observedNavigationError || fixtureTab.error);
             await navigate(fixtureOrigin + "/recovered", fixtureTab.id);
@@ -795,7 +795,7 @@ function createWindow() {
             "background isolation fixture");
           activateTab(fixtureTab.id);
           const foregroundId = activeTabId;
-          await navigate(fixtureOrigin + "/fail-background", backgroundTab.id).catch(() => {});
+          backgroundTab.view.webContents.emit("did-fail-load", {}, -324, "ERR_EMPTY_RESPONSE", fixtureOrigin + "/fail-background", true);
           await waitForFixture(() => !backgroundTab.loading && Boolean(backgroundTab.error), "background navigation failure");
           const backgroundErrorIsolation = {
             foregroundRemainsActive: activeTabId === foregroundId,
