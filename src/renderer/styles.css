@@ -81,6 +81,9 @@ body.private-mode .security-mark { color: #b69be0; }
   .library-controls button { font-size: 10px; padding-inline: 5px; }
   .search-provider-label { display: none; }
   #search-provider { flex: 0 1 76px; width: 76px; min-width: 64px; }
+  /* The disabled site-access control has no useful narrow-screen action. */
+  #clear-site-permissions { display: none; }
+  .tools-menu summary { padding-inline: 6px; }
 }
 
 /* Frameless-window controls: the app owns these buttons on every desktop platform. */
@@ -128,3 +131,11 @@ body.private-mode .security-mark { color: #b69be0; }
   :root[data-theme="system"] .toolbar { background: #e8eaed; border-color: #c7cbd0; }
   :root[data-theme="system"] .library-panel, :root[data-theme="system"] .settings-panel, :root[data-theme="system"] .tools-menu-panel, :root[data-theme="system"] .find-bar { background: #fff; color: #202327; border-color: #c8cdd2; }
 }
+
+/* Password vault: secret fields stay masked until the user explicitly reveals one. */
+.password-panel { width: min(420px, calc(100vw - 24px)); }
+.password-entry { align-items: start; }
+.password-entry .download-detail { padding: 2px; }
+.password-entry .download-detail input { width: 100%; min-width: 0; height: 27px; margin-top: 5px; padding: 0 7px; border: 1px solid #343a40; border-radius: 5px; background: #0e1012; color: #f1f2f3; font: inherit; font-size: 11px; }
+.password-entry > button { flex: 0 0 auto; width: auto; min-width: 48px; padding: 4px 7px; }
+:root[data-theme="light"] .password-entry .download-detail input { background: #fff; color: #202327; border-color: #c8cdd2; }

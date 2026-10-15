@@ -42,6 +42,7 @@
       <button id="show-bookmarks" title="Show bookmarks" aria-controls="library-panel" aria-expanded="false">Bookmarks</button>
       <button id="show-history" title="Show browsing history" aria-controls="library-panel" aria-expanded="false">History</button>
       <button id="show-downloads" title="Show downloads" aria-controls="library-panel" aria-expanded="false">Downloads</button>
+      <button id="open-passwords" type="button" aria-controls="password-panel" aria-expanded="false">Passwords</button>
       <button id="open-settings" type="button" aria-controls="settings-panel" aria-expanded="false">Settings</button>
       <button id="clear-site-permissions" title="This site has no temporary permissions" disabled>Site access</button>
       <details class="tools-menu">
@@ -86,6 +87,20 @@
       <p class="settings-note">Settings are stored in this local browser profile. Website account sync is not included.</p>
       <button class="settings-save" type="submit">Save settings</button>
     </form>
+  </section>
+  <section id="password-panel" class="settings-panel password-panel" hidden aria-labelledby="password-title">
+    <div class="library-heading"><strong id="password-title">Password vault</strong><button id="close-passwords" type="button" aria-label="Close password vault">×</button></div>
+    <p id="password-vault-note" class="settings-note">Passwords are stored only when OS-backed encryption is available. Entries are not automatically captured or filled yet.</p>
+    <form id="password-form" class="settings-form">
+      <label for="password-site">Website URL</label>
+      <input id="password-site" name="url" type="url" required autocomplete="url" placeholder="https://example.com">
+      <label for="password-username">Username or email</label>
+      <input id="password-username" name="username" required maxlength="256" autocomplete="username" placeholder="you@example.com">
+      <label for="password-secret">Password</label>
+      <input id="password-secret" name="password" type="password" required maxlength="4096" autocomplete="new-password">
+      <button class="settings-save" type="submit">Save password securely</button>
+    </form>
+    <div id="password-list" class="library-list" aria-label="Saved passwords"></div>
   </section>
   <section id="library-panel" class="library-panel" hidden aria-labelledby="library-title">
     <div class="library-heading"><strong id="library-title">Bookmarks</strong><button id="close-library" aria-label="Close panel">×</button></div>

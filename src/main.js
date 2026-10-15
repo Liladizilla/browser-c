@@ -1,4 +1,4 @@
-import { app, BrowserWindow, WebContentsView, ipcMain, dialog, shell } from "electron";
+import { app, BrowserWindow, WebContentsView, ipcMain, dialog, shell, safeStorage } from "electron";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
@@ -38,6 +38,44 @@ const downloadSessions = new WeakSet();
 const permissionGrants = new WeakMap();
 const pendingPermissionPrompts = new WeakMap();
 const privateSessions = new WeakSet();
+let passwordVault = [];
+let passwordVaultAvailable = false;
+let passwordVaultWriteQueue = Promise.resolve();
+const MAX_PASSWORDS = 500;
+function passwordVaultBackendAvailable() {
+  if (!safeStorage.isEncryptionAvailable() || typeof safeStorage.getSelectedStorageBackend !== "function") return false;
+  try {
+    const backend = safeStorage.getSelectedStorageBackend();
+    return ["gnome_libsecret", "kwallet", "kwallet5", "kwallet6", "keychain", "dpapi"].includes(backend);
+  } catch { return false; }
+}
+async function loadPasswordVault() {
+  passwordVaultAvailable = passwordVaultBackendAvailable();
+  if (!passwordVaultAvailable) { passwordVault = []; return; }
+  try {
+    const encrypted = await readFile(path.join(app.getPath("userData"), "password-vault.enc"));
+    passwordVault = JSON.parse(safeStorage.decryptString(encrypted));
+    if (!Array.isArray(passwordVault)) passwordVault = [];
+    passwordVault = passwordVault.filter((item) => item && typeof item.id === "string" && typeof item.origin === "string"
+      && typeof item.username === "string" && typeof item.password === "string").slice(0, MAX_PASSWORDS);
+  } catch { passwordVault = []; }
+}
+async function persistPasswordVault() {
+  if (!passwordVaultAvailable || !passwordVaultBackendAvailable()) throw new Error("Secure OS-backed password storage is unavailable. Browser C will not store passwords in plaintext.");
+  passwordVaultWriteQueue = passwordVaultWriteQueue.catch(() => {}).then(async () => {
+    const file = path.join(app.getPath("userData"), "password-vault.enc");
+    const temporary = file + ".tmp";
+    await mkdir(path.dirname(file), { recursive: true });
+    const encrypted = safeStorage.encryptString(JSON.stringify(passwordVault));
+    await writeFile(temporary, encrypted, { mode: 0o600 });
+    await rename(temporary, file);
+  });
+  return passwordVaultWriteQueue;
+}
+function passwordVaultSummary() {
+  return { available: passwordVaultAvailable && passwordVaultBackendAvailable(),
+    entries: passwordVault.map(({ id, origin, username, createdAt }) => ({ id, origin, username, createdAt })) };
+}
 
 const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
 const canGoBack = (contents) => contents.navigationHistory.canGoBack();
@@ -992,6 +1030,50 @@ ipcMain.handle("browser:permissions:clear-site", () => {
   sendState();
   return { ok: true, cleared };
 });
+ipcMain.handle("browser:passwords:list", (event) => {
+  if (!isTrustedChromeEvent(event)) return { available: false, entries: [], error: "Untrusted password-vault request." };
+  return passwordVaultSummary();
+});
+ipcMain.handle("browser:passwords:save", async (event, input) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted password-vault request." };
+  if (!passwordVaultAvailable || !passwordVaultBackendAvailable()) return { ok: false, error: "Secure OS-backed password storage is unavailable. No password was saved." };
+  if (!input || typeof input !== "object") return { ok: false, error: "Enter a website, username, and password." };
+  let parsed;
+  try { parsed = new URL(String(input.url || "")); } catch { return { ok: false, error: "Enter a valid website URL." }; }
+  const allowed = parsed.protocol === "https:" || (parsed.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname));
+  if (!allowed || parsed.username || parsed.password) return { ok: false, error: "Passwords can only be stored for HTTPS sites (HTTP localhost is allowed for development)." };
+  const origin = parsed.origin;
+  const username = String(input.username ?? "").trim();
+  const password = String(input.password ?? "");
+  if (!username || username.length > 256 || !password || password.length > 4096) return { ok: false, error: "Username is required (up to 256 characters) and password must be 1–4096 characters." };
+  const existing = passwordVault.findIndex((item) => item.origin === origin && item.username === username);
+  const previous = existing >= 0 ? passwordVault[existing] : null;
+  const previousVault = passwordVault.slice();
+  const entry = { id: existing >= 0 ? previous.id : randomUUID(), origin, username, password,
+    createdAt: existing >= 0 ? previous.createdAt : new Date().toISOString(), updatedAt: new Date().toISOString() };
+  if (existing >= 0) passwordVault[existing] = entry;
+  else passwordVault.unshift(entry);
+  passwordVault = passwordVault.slice(0, MAX_PASSWORDS);
+  try { await persistPasswordVault(); return { ok: true, ...passwordVaultSummary() }; }
+  catch (error) {
+    passwordVault = previousVault;
+    return { ok: false, error: error instanceof Error ? error.message : "Could not save password securely." };
+  }
+});
+ipcMain.handle("browser:passwords:reveal", (event, id) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted password-vault request." };
+  if (!passwordVaultAvailable || !passwordVaultBackendAvailable()) return { ok: false, error: "Secure OS-backed password storage is unavailable." };
+  const entry = passwordVault.find((item) => item.id === String(id || ""));
+  return entry ? { ok: true, password: entry.password } : { ok: false, error: "Password entry not found." };
+});
+ipcMain.handle("browser:passwords:delete", async (event, id) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted password-vault request." };
+  const index = passwordVault.findIndex((item) => item.id === String(id || ""));
+  if (index < 0) return { ok: false, error: "Password entry not found." };
+  const [removed] = passwordVault.splice(index, 1);
+  try { await persistPasswordVault(); return { ok: true, ...passwordVaultSummary() }; }
+  catch (error) { passwordVault.splice(index, 0, removed); return { ok: false, error: error instanceof Error ? error.message : "Could not update password vault." }; }
+});
 ipcMain.handle("browser:settings:preferences", async (_event, input) => {
   if (!input || typeof input !== "object") return { ok: false, error: "Invalid settings." };
   const next = {};
@@ -1070,6 +1152,7 @@ app.on("certificate-error", (event, _contents, _url, _error, _certificate, callb
 
 app.whenReady().then(async () => {
   await loadProfile();
+  await loadPasswordVault();
   createWindow();
   restoreTabs(await readSession());
   app.on("activate", async () => {
