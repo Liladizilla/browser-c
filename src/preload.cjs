@@ -5,6 +5,10 @@ contextBridge.exposeInMainWorld("browserC", Object.freeze({
   forward: () => ipcRenderer.invoke("browser:forward"),
   reload: () => ipcRenderer.invoke("browser:reload"),
   stop: () => ipcRenderer.invoke("browser:stop"),
+  findInPage: (query) => ipcRenderer.invoke("browser:find:start", String(query ?? "")),
+  findNext: (query) => ipcRenderer.invoke("browser:find:next", String(query ?? "")),
+  stopFind: () => ipcRenderer.invoke("browser:find:stop"),
+  changeZoom: (action) => ipcRenderer.invoke("browser:zoom", String(action ?? "")),
   home: () => ipcRenderer.invoke("browser:home"),
   newTab: () => ipcRenderer.invoke("browser:new-tab"),
   activateTab: (id) => ipcRenderer.invoke("browser:activate-tab", Number(id)),
@@ -27,6 +31,12 @@ contextBridge.exposeInMainWorld("browserC", Object.freeze({
     const listener = () => callback();
     ipcRenderer.on("browser:focus-address", listener);
     return () => ipcRenderer.removeListener("browser:focus-address", listener);
+  },
+  onFindOpen: (callback) => {
+    if (typeof callback !== "function") return () => {};
+    const listener = () => callback();
+    ipcRenderer.on("browser:find:open", listener);
+    return () => ipcRenderer.removeListener("browser:find:open", listener);
   },
   onState: (callback) => {
     if (typeof callback !== "function") return () => {};
