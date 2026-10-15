@@ -113,7 +113,7 @@ async function showLibrary(mode) {
   if (!entries.length) {
     const empty = document.createElement("div");
     empty.className = "library-empty";
-    empty.textContent = mode === "bookmarks" ? "No bookmarks yet. Save a page with ☆ Bookmark." : mode === "history" ? "No browsing history yet." : "No downloads in this session.";
+    empty.textContent = mode === "bookmarks" ? "No bookmarks yet. Save a page with ☆ Bookmark." : mode === "history" ? "No browsing history yet." : "No completed downloads saved yet.";
     libraryList.append(empty);
     return;
   }
@@ -130,7 +130,18 @@ async function showLibrary(mode) {
       meta.textContent = entry.state + " · " + formatBytes(entry.receivedBytes) + total;
       detail.append(title, meta);
       row.append(detail);
-      if (entry.state === "in-progress" || entry.state === "choosing-location") {
+      if (entry.state === "completed" && entry.savePath) {
+        const reveal = document.createElement("button");
+        reveal.type = "button";
+        reveal.textContent = "Show";
+        reveal.title = "Show downloaded file in its folder";
+        reveal.setAttribute("aria-label", "Show " + entry.filename + " in folder");
+        reveal.addEventListener("click", async () => {
+          const result = await api.revealDownload(entry.id);
+          if (!result?.ok) status.textContent = result?.error || "Could not reveal download";
+        });
+        row.append(reveal);
+      } else if ((entry.state === "in-progress" || entry.state === "choosing-location") && entry.id) {
         const cancel = document.createElement("button");
         cancel.type = "button";
         cancel.textContent = "×";
