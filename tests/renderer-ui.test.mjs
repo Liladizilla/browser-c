@@ -40,7 +40,7 @@ test("minimum window width makes the narrow responsive layout reachable and smok
 });
 
 test("search provider selector is accessible and wired to persistent settings", () => {
-  assert.match(html, /label class="search-provider-label" for="search-provider"/);
+  assert.match(html, /label for="search-provider">Default search provider<\/label>/);
   assert.match(html, /option value="duckduckgo"/);
   assert.match(renderer, /api\.setSearchProvider\(searchProviderSelect\.value\)/);
   assert.match(main, /browser:settings:search-provider/);
