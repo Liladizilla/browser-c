@@ -53,3 +53,23 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Launch Electron under a virtual display
         run: xvfb-run -a npm run smoke
+
+  electron-cross-platform-smoke:
+    name: Electron runtime smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Launch Electron and exercise browser runtime
+        run: npm run smoke
