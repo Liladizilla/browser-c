@@ -17,7 +17,7 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Render websites in isolated, sandboxed Chromium content surfaces.
 - [x] Add HTTP/HTTPS navigation policy and narrow IPC boundaries.
 - [x] Add automated address-resolution and security-policy regression tests.
-- [ ] Run application smoke tests on Linux, Windows, and macOS.
+- [x] Run automated packaged-app smoke tests on Linux and Windows, plus packaged macOS app-bundle smoke tests in CI; manual target-device validation remains open.
 - [ ] Test a local page and controlled HTTPS page on each target OS.
 - [x] Use lockfile-based reproducible dependency installation with `npm ci`.
 
@@ -69,7 +69,7 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Add automated secret scanning of pull requests, pushes, and repository history.
 - [ ] Test clean install, upgrade, uninstall, profile retention, and rollback.
 - [x] Add a manual/tag-triggered cross-platform packaging workflow that uploads only staged, validated package files after tests and dependency audits pass.
-- [x] Add Windows/macOS package-smoke CI to build distributables, validate checksums/SBOMs, inspect the NSIS installer and macOS app bundle, and retain artifacts for review; installed-app launch and lifecycle testing remain open.
+- [x] Add Windows/macOS package-smoke CI to build distributables, validate checksums/SBOMs, inspect artifacts, install and launch the Windows NSIS package, launch the macOS app bundle extracted from ZIP, and retain artifacts; macOS DMG installation and lifecycle testing remain open.
 - [ ] Publish signed/notarized release artifacts; packaging workflow runs still need platform validation.
 
 ## Phase 6 — CharisOS feasibility and integration
