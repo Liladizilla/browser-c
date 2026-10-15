@@ -26,6 +26,14 @@ Get-FileHash .\Browser-C-0.2.0-win32-x64.exe -Algorithm SHA256
 
 Use the actual filename produced by the workflow. A checksum detects accidental corruption or mismatches; it does not prove who built a package or protect against an attacker who can replace both the package and its manifest.
 
+When the GitHub CLI is installed and authenticated, verify the build-provenance attestation for a downloaded artifact with:
+
+```sh
+gh attestation verify ./Browser-C-0.2.0-linux-x64.AppImage --repo Liladizilla/browser-c
+```
+
+Replace the example path with the exact artifact you downloaded. Repeat for each package you intend to trust. A successful attestation verifies provenance against GitHub's attestation service and repository identity; it does not certify that the application is bug-free, safe to install, signed by an OS vendor, or successfully tested on your machine.
+
 ## Release gates and limitations
 
 - Workflow artifacts are build outputs for testing, not stable public releases.
