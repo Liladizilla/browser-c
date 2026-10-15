@@ -51,3 +51,11 @@ test("risky download prompts default to cancellation and disclose no malware sca
   assert.match(main, /Browser C does not scan downloaded files/);
   assert.match(main, /if\s*\(confirmation\.response !== 1\)\s*\{/);
 });
+
+test("private-mode smoke covers permission and download persistence boundaries", () => {
+  assert.match(main, /privatePermissionGrantIsolated/);
+  assert.match(main, /privateDownloadExcludedFromProfile/);
+  assert.match(main, /permissionGrants\.set\(privateSession/);
+  assert.match(main, /rememberCompletedDownload\(\{/);
+  assert.match(main, /isPrivate:\s*true/);
+});
