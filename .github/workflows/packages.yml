@@ -43,6 +43,8 @@ jobs:
           node-version: 24
       - name: Install application dependencies
         run: npm ci --no-audit --no-fund
+      - name: Run dependency vulnerability audit
+        run: npm audit --audit-level=high
       - name: Run repository validation
         run: npm run validate
       - name: Check JavaScript syntax
@@ -51,19 +53,21 @@ jobs:
         run: npm test
       - name: Build platform packages
         run: npx --yes electron-builder@26.0.12 ${{ matrix.args }}
+      - name: Stage distributable package artifacts
+        run: node scripts/collect-release-artifacts.mjs ${{ matrix.platform }}
       - name: Generate SHA-256 checksums
-        run: npm run checksums
+        run: npm run checksums -- release/artifacts
       - name: Validate package formats and checksums
-        run: node scripts/validate-release.mjs ${{ matrix.platform }}
+        run: node scripts/validate-release.mjs ${{ matrix.platform }} release/artifacts
       - name: Attest package and checksum provenance
         uses: actions/attest-build-provenance@v3
         with:
           subject-path: |
-            release/*
+            release/artifacts/*
       - name: Upload package artifacts
         uses: actions/upload-artifact@v6
         with:
           name: browser-c-${{ matrix.platform }}
-          path: release/*
+          path: release/artifacts/*
           if-no-files-found: error
           retention-days: 14
