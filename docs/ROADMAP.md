@@ -48,11 +48,13 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 
 ## Phase 4 — Reliability, networking, graphics, privacy
 
-- [ ] Test redirects, TLS/certificate errors, proxies, captive portals, and offline behavior.
+- [x] Test redirects and offline connection-refused navigation/recovery in the Linux Electron smoke suite.
+- [ ] Test TLS/certificate errors, proxies, and captive portals.
 - [ ] Verify WebGL, supported WebGPU, media playback, fonts, scaling, and acceleration per OS.
 - [ ] Add GPU diagnostics and fallback behavior for incompatible drivers.
 - [ ] Profile memory, CPU, startup, long sessions, and many-tab workloads on modest hardware.
 - [ ] Add profile migrations, corruption recovery, and data export/import strategy.
+- [x] Surface renderer-process crashes as visible tab errors and verify reload recovery in Linux Electron smoke.
 - [ ] Define telemetry policy; default to no telemetry unless explicitly designed and disclosed.
 
 **Exit gate:** compatibility matrix records tested hardware, OS versions, limitations, and reproducible results.
