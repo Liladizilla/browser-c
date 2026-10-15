@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 const platform = process.argv[2];
@@ -18,7 +18,7 @@ const artifacts = entries.filter((entry) => entry.isFile() && entry.name !== "SH
 assert.ok(artifacts.length > 0, "Release directory contains no package artifacts");
 for (const name of artifacts) {
   assert.ok(!/[\\u0000-\\u001f\\u007f/\\\\]/.test(name), `Unsafe artifact filename: ${JSON.stringify(name)}`);
-  const details = await import("node:fs/promises").then(({ stat }) => stat(path.join(directory, name)));
+  const details = await stat(path.join(directory, name));
   assert.ok(details.size > 0, `Package artifact is empty: ${name}`);
 }
 for (const extension of expectedExtensions[platform]) {
