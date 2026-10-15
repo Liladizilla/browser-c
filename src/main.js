@@ -452,18 +452,16 @@ function createWindow() {
           throw new Error("UI interaction assertions failed: " + JSON.stringify(interactions));
         }
         windowRef.setSize(520, 840);
-        const narrowLayout = await windowRef.webContents.executeJavaScript(`(() => {
+        const narrowLayout = await windowRef.webContents.executeJavaScript(`(async () => {
+          for (let attempt = 0; attempt < 30 && document.documentElement.clientWidth > 560; attempt++) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
           const width = document.documentElement.clientWidth;
           const toolbar = document.querySelector(".toolbar");
-          const rows = [" .tab-row", " .controls", " .library-controls"]
-            .map((selector) => {
-              const element = document.querySelector(selector.trim());
-              return {
-                selector: selector.trim(),
-                clientWidth: element.clientWidth,
-                scrollWidth: element.scrollWidth
-              };
-            });
+          const rows = [".tab-row", ".controls", ".library-controls"].map((selector) => {
+            const element = document.querySelector(selector);
+            return { selector, clientWidth: element.clientWidth, scrollWidth: element.scrollWidth };
+          });
           return {
             viewportWidth: width,
             toolbarClientWidth: toolbar.clientWidth,
