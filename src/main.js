@@ -35,7 +35,7 @@ function createWindow() {
     width: 1280, height: 840, minWidth: 720, minHeight: 480,
     title: "Browser C", backgroundColor: "#101214",
     webPreferences: {
-      preload: path.join(here, "preload.js"),
+      preload: path.join(here, "preload.cjs"),
       contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false
     }
   });
