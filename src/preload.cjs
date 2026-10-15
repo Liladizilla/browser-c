@@ -1,6 +1,12 @@
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("browserC", Object.freeze({
   navigate: (input) => ipcRenderer.invoke("browser:navigate", String(input ?? "")),
+  minimizeWindow: () => ipcRenderer.invoke("browser:window:minimize"),
+  toggleMaximizeWindow: () => ipcRenderer.invoke("browser:window:toggle-maximize"),
+  closeWindow: () => ipcRenderer.invoke("browser:window:close"),
+  printPage: () => ipcRenderer.invoke("browser:page:print"),
+  savePageAs: () => ipcRenderer.invoke("browser:page:save-as"),
+  openDevTools: () => ipcRenderer.invoke("browser:page:devtools"),
   back: () => ipcRenderer.invoke("browser:back"),
   forward: () => ipcRenderer.invoke("browser:forward"),
   reload: () => ipcRenderer.invoke("browser:reload"),
