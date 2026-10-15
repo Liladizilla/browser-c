@@ -532,7 +532,7 @@ function createWindow() {
           fixtureTab.view.webContents.reload();
           await waitForFixture(() => (fixtureHits.get("/two") || 0) > previousReloadCount && !fixtureTab.loading, "reload");
           const slowNavigation = navigate(fixtureOrigin + "/slow", fixtureTab.id).catch(() => {});
-          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/slow") && fixtureTab.loading, "slow navigation start");
+          await waitForFixture(() => fixtureTab.url.endsWith("/slow") && fixtureTab.loading, "slow navigation start");
           fixtureTab.view.webContents.stop();
           await waitForFixture(() => !fixtureTab.loading, "stop to clear loading state");
           await slowNavigation;
