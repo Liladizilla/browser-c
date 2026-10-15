@@ -69,7 +69,7 @@ async function readSession() {
   try {
     const file = path.join(app.getPath("userData"), "session.json");
     const data = JSON.parse(await readFile(file, "utf8"));
-    if (data.version !== SESSION_VERSION || !Array.isArray(data.tabs)) return [];
+    if (data.version !== SESSION_VERSION || !Array.isArray(data.tabs)) return { urls: [], activeIndex: 0 };
     const urls = data.tabs.map((tab) => tab?.url)
       .filter((url) => typeof url === "string" && isWebUrl(url)).slice(0, 10);
     const activeIndex = Number.isInteger(data.activeIndex)
