@@ -33,7 +33,8 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Search-provider settings for Google, DuckDuckGo, Bing, and Brave Search, persisted in the browser profile.
 - [x] Download list, explicit save-location prompt, progress display, and cancellation.
 - [x] Completed-download history persists (bounded) and can reveal a completed file in its folder.
-- [ ] Safe-file scanning and handling of potentially dangerous file types.
+- [x] Warn before saving known executable, script, and installer file types; Cancel is the default. This is not malware scanning.
+- [ ] Malware scanning or OS-integrated reputation checks for downloads.
 - [x] Explicit session-scoped permission prompts for supported camera/microphone, geolocation, notifications, MIDI, clipboard-read, and pointer-lock requests; unsupported/insecure requests remain denied, with active-site grants revocable from the toolbar.
 - [x] Find in page with next/previous navigation and Ctrl/Cmd+F entry.
 - [x] Per-tab page zoom controls with keyboard shortcuts and bounded 50%–300% scaling.

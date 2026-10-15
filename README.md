@@ -7,7 +7,7 @@
 - Multi-tab browsing with keyboard shortcuts and session restore.
 - HTTP/HTTPS address navigation, bookmarks, browsing history, and page find/zoom controls.
 - Selectable, profile-persisted search providers: Google, DuckDuckGo, Bing, and Brave Search.
-- Download prompts, progress/cancellation, bounded completed-download history, and reveal-in-folder actions.
+- Download prompts, progress/cancellation, bounded completed-download history, reveal-in-folder actions, and warnings before saving known executable/script/installer file types (Browser C does not scan files for malware).
 - Session-scoped prompts for a supported set of website permissions, with unsupported and insecure requests denied by default; temporary grants can be revoked for the active site from the toolbar.
 - Private tabs use isolated, non-persistent Electron sessions; downloads saved to disk remain on disk by design.
 - Automated JavaScript checks, cross-platform CI, a Linux Electron integration smoke test, and CodeQL scanning.
