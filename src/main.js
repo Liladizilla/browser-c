@@ -522,9 +522,13 @@ function createWindow() {
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "first page");
           await navigate(fixtureOrigin + "/two", fixtureTab.id);
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "second page");
+          const previousOneCount = fixtureHits.get("/one") || 0;
           fixtureTab.view.webContents.navigationHistory.goBack();
+          await waitForFixture(() => (fixtureHits.get("/one") || 0) > previousOneCount, "back request");
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "back navigation");
+          const previousTwoCount = fixtureHits.get("/two") || 0;
           fixtureTab.view.webContents.navigationHistory.goForward();
+          await waitForFixture(() => (fixtureHits.get("/two") || 0) > previousTwoCount, "forward request");
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "forward navigation");
           const backForwardWorks = fixtureTab.view.webContents.getURL().endsWith("/two")
             && (fixtureHits.get("/one") || 0) >= 2 && (fixtureHits.get("/two") || 0) >= 2;
@@ -539,7 +543,9 @@ function createWindow() {
           const navigationIntegration = {
             backForwardWorks,
             reloadWorks: (fixtureHits.get("/two") || 0) > previousReloadCount,
-            stopClearsLoading: !fixtureTab.loading
+            stopClearsLoading: !fixtureTab.loading,
+            currentUrl: fixtureTab.view.webContents.getURL(),
+            fixtureHits: Object.fromEntries(fixtureHits)
           };
           if (!navigationIntegration.backForwardWorks || !navigationIntegration.reloadWorks || !navigationIntegration.stopClearsLoading) {
             throw new Error("Navigation integration assertions failed: " + JSON.stringify(navigationIntegration));
