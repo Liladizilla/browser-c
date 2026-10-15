@@ -223,7 +223,7 @@ function safeOrigin(origin) {
     return parsed.protocol === "https:" || (parsed.protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname));
   } catch { return false; }
 }
-function permissionKey(origin, permission) { return origin + "|" + permission; }
+function permissionKey(origin, permission) { return new URL(origin).origin + "|" + permission; }
 function sitePermissions(tab) {
   if (!tab || !isWebUrl(tab.url)) return [];
   let origin;
