@@ -27,7 +27,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid #d6a64c; outline-
 #address { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: #f2f3f4; font: inherit; font-size: 12px; }
 #address::placeholder { color: #828991; }
 .go { height: 24px; width: 24px; flex-basis: 24px; font-size: 14px; }
-#status { position: absolute; left: 15px; bottom: 4px; color: #8d969f; font-size: 10px; max-width: calc(100% - 30px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
+#status { position: absolute; left: 15px; bottom: 4px; color: #8d969f; font-size: 10px; max-width: calc(100% - 92px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
+.retry-navigation { position: absolute; right: 12px; bottom: 1px; width: auto; height: 20px; padding: 0 8px; border-color: #66512d; color: #e4c27a; font-size: 10px; }
+.retry-navigation[hidden] { display: none; }
 @media (max-width: 760px) { .toolbar { padding-inline: 7px; } .tab-row { gap: 6px; } .brand { font-size: 10px; } .brand > span:last-child { display: none; } .tab { min-width: 68px; } .new-private-tab { max-width: 54px; overflow: hidden; } .library-controls { padding-left: 0; gap: 4px; } .library-controls button { padding-inline: 7px; } .zoom-controls { gap: 0; } }
 @media (max-width: 520px) { .tab { min-width: 54px; } .tab-select { padding-inline: 5px; } .tab-close { flex-basis: 20px; width: 20px; } .library-controls button { font-size: 10px; padding-inline: 5px; } .controls { gap: 2px; } #home { display: none; } .zoom-controls button { width: 23px; flex-basis: 23px; } #zoom-reset { width: 37px; flex-basis: 37px; } }
 
