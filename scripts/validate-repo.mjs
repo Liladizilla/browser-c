@@ -4,7 +4,7 @@ import { constants } from 'node:fs';
 const requiredFiles = [
   'README.md', 'LICENSE', 'CONTRIBUTING.md', 'SECURITY.md',
   'docs/ARCHITECTURE.md', 'docs/ROADMAP.md', 'docs/SECURITY_MODEL.md',
-  '.github/workflows/ci.yml', 'package.json', 'src/main.js', 'src/preload.js',
+  '.github/workflows/ci.yml', 'package.json', 'src/main.js', 'src/preload.cjs',
   'src/navigation.js', 'src/renderer/index.html', 'src/renderer/styles.css',
   'src/renderer/renderer.js', 'tests/navigation.test.mjs'
 ];
