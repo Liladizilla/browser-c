@@ -82,3 +82,15 @@ body.private-mode .security-mark { color: #b69be0; }
   .search-provider-label { display: none; }
   #search-provider { flex: 0 1 76px; width: 76px; min-width: 64px; }
 }
+
+/* Frameless-window controls: the app owns these buttons on every desktop platform. */
+.brand { -webkit-app-region: drag; }
+.window-controls { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; -webkit-app-region: no-drag; }
+.window-controls button { width: 30px; flex-basis: 30px; height: 28px; border-radius: 5px; font-size: 14px; }
+.window-controls .window-close:hover:not(:disabled) { background: #a83232; border-color: #c64a4a; color: white; }
+.tools-menu { position: relative; flex: 0 0 auto; font-size: 11px; }
+.tools-menu summary { list-style: none; cursor: pointer; display: grid; place-items: center; height: 23px; padding: 0 9px; border: 1px solid #343a40; border-radius: 6px; color: #d4d8dc; }
+.tools-menu summary::-webkit-details-marker { display: none; }
+.tools-menu summary:hover, .tools-menu[open] summary { background: #2a2e32; border-color: #3b4147; }
+.tools-menu-panel { position: absolute; z-index: 10; top: 28px; right: 0; width: 180px; padding: 5px; display: grid; gap: 3px; border: 1px solid #3b4147; border-radius: 8px; background: #191d21; box-shadow: 0 10px 25px #0009; }
+.tools-menu-panel button { width: 100%; flex: 0 0 auto; height: 30px; padding: 0 9px; text-align: left; font-size: 11px; }

@@ -98,3 +98,29 @@ test("failed navigation exposes an accessible retry action and hides it after re
   assert.match(css, /\.retry-navigation\[hidden\] \{ display: none; \}/);
   assert.match(renderer, /async function submitAddress\(event\)/);
 });
+
+test("frameless browser chrome exposes working native window-control IPC actions", () => {
+  assert.match(main, /backgroundColor: "#101214", frame: false/);
+  assert.match(html, /id="window-minimize"/);
+  assert.match(html, /id="window-maximize"/);
+  assert.match(html, /id="window-close"/);
+  assert.match(renderer, /api\.minimizeWindow\(\)/);
+  assert.match(renderer, /api\.toggleMaximizeWindow\(\)/);
+  assert.match(renderer, /api\.closeWindow\(\)/);
+  assert.match(main, /browser:window:minimize/);
+  assert.match(main, /browser:window:toggle-maximize/);
+  assert.match(main, /browser:window:close/);
+  assert.match(main, /isTrustedChromeEvent/);
+});
+
+test("page tools expose print, complete-page save, and detached developer tools", () => {
+  assert.match(html, /id="print-page"/);
+  assert.match(html, /id="save-page-as"/);
+  assert.match(html, /id="open-devtools"/);
+  assert.match(renderer, /api\.printPage\(\)/);
+  assert.match(renderer, /api\.savePageAs\(\)/);
+  assert.match(renderer, /api\.openDevTools\(\)/);
+  assert.match(main, /webContents\.print\(/);
+  assert.match(main, /webContents\.savePage\(result\.filePath, "HTMLComplete"\)/);
+  assert.match(main, /webContents\.openDevTools\(\{ mode: "detach" \}\)/);
+});
