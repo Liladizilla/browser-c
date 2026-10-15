@@ -39,6 +39,14 @@ test("minimum window width makes the narrow responsive layout reachable and smok
   assert.match(css, /@media \(max-width: 520px\)/);
 });
 
+test("search provider selector is accessible and wired to persistent settings", () => {
+  assert.match(html, /label class="search-provider-label" for="search-provider"/);
+  assert.match(html, /option value="duckduckgo"/);
+  assert.match(renderer, /api\.setSearchProvider\(searchProviderSelect\.value\)/);
+  assert.match(main, /browser:settings:search-provider/);
+  assert.match(main, /searchProvider: profile\.searchProvider/);
+});
+
 test("site permission controls stay disabled until the active site has temporary grants", () => {
   assert.match(html, /id="clear-site-permissions"[^>]*disabled>Site access<\/button>/);
   assert.match(renderer, /clearSitePermissions\.disabled = sitePermissions\.length === 0/);

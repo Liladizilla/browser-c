@@ -14,6 +14,7 @@ const PROFILE_VERSION = 1;
 const MAX_HISTORY_ITEMS = 500;
 const MAX_BOOKMARKS = 200;
 const MAX_DOWNLOADS = 100;
+const SEARCH_PROVIDERS = Object.freeze({ google: "Google", duckduckgo: "DuckDuckGo", bing: "Bing", brave: "Brave Search" });
 const PERMISSION_LABELS = Object.freeze({
   media: "camera or microphone",
   geolocation: "location",
@@ -29,7 +30,7 @@ let nextTabId = 1;
 let sessionSaveTimer;
 let quitAfterSessionSave = false;
 let lastSessionSnapshot = null;
-let profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [] };
+let profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [], searchProvider: "google" };
 let profileWriteQueue = Promise.resolve();
 const downloads = new Map();
 const downloadSessions = new WeakSet();
@@ -52,7 +53,7 @@ function sendState(patch = {}) {
     tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     loading: Boolean(tab?.loading), error: tab?.error || "", canGoBack: Boolean(tab && canGoBack(tab.view.webContents)),
     canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
-    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab), ...patch
+    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab), searchProvider: profile.searchProvider, ...patch
   });
 }
 function layoutTabs() {
@@ -113,6 +114,7 @@ async function loadProfile() {
     if (data.version !== PROFILE_VERSION) return;
     profile = {
       version: PROFILE_VERSION,
+      searchProvider: Object.hasOwn(SEARCH_PROVIDERS, data.searchProvider) ? data.searchProvider : "google",
       bookmarks: Array.isArray(data.bookmarks) ? data.bookmarks
         .filter((item) => item && isWebUrl(item.url) && typeof item.title === "string").slice(0, MAX_BOOKMARKS) : [],
       history: Array.isArray(data.history) ? data.history
@@ -123,7 +125,7 @@ async function loadProfile() {
         .slice(0, MAX_DOWNLOADS) : []
     };
     for (const item of profile.downloads) downloads.set(item.id, { ...item, item: null, restored: true });
-  } catch { profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [] }; }
+  } catch { profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [], searchProvider: "google" }; }
 }
 function recordHistory(tab) {
   if (!shouldRecordHistory(tab, isWebUrl)) return;
@@ -134,7 +136,7 @@ function recordHistory(tab) {
 async function navigate(rawInput, tabId = activeTabId) {
   const tab = tabs.find((candidate) => candidate.id === tabId);
   if (!tab) throw new Error("The selected tab no longer exists.");
-  const destination = resolveAddress(rawInput);
+  const destination = resolveAddress(rawInput, profile.searchProvider);
   if (!isWebUrl(destination)) throw new TypeError("Only HTTP and HTTPS destinations are allowed.");
   tab.url = destination; tab.loading = true; tab.error = ""; sendState();
   try {
@@ -754,7 +756,7 @@ ipcMain.handle("browser:get-state", () => {
   return { tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     canGoBack: Boolean(tab && canGoBack(tab.view.webContents)), canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
     loading: Boolean(tab?.loading), error: tab?.error || "",
-    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab) };
+    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab), searchProvider: profile.searchProvider };
 });
 ipcMain.handle("browser:permissions:clear-site", () => {
   const tab = activeTab();
@@ -771,6 +773,15 @@ ipcMain.handle("browser:permissions:clear-site", () => {
   }
   sendState();
   return { ok: true, cleared };
+});
+ipcMain.handle("browser:settings:search-provider", async (_event, provider) => {
+  if (typeof provider !== "string" || !Object.hasOwn(SEARCH_PROVIDERS, provider)) {
+    return { ok: false, error: "Choose a supported search provider." };
+  }
+  profile.searchProvider = provider;
+  await persistProfile();
+  sendState();
+  return { ok: true, searchProvider: provider };
 });
 ipcMain.handle("browser:bookmarks:get", () => profile.bookmarks);
 ipcMain.handle("browser:bookmarks:toggle", async (_event, item) => {

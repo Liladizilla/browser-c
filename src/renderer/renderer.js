@@ -14,6 +14,7 @@ const showBookmarks = document.querySelector("#show-bookmarks");
 const showHistory = document.querySelector("#show-history");
 const showDownloads = document.querySelector("#show-downloads");
 const clearSitePermissions = document.querySelector("#clear-site-permissions");
+const searchProviderSelect = document.querySelector("#search-provider");
 const libraryPanel = document.querySelector("#library-panel");
 const libraryTitle = document.querySelector("#library-title");
 const libraryList = document.querySelector("#library-list");
@@ -87,6 +88,7 @@ function applyState(state = {}) {
   bookmarkCurrent.disabled = Boolean(state.isPrivate);
   bookmarkCurrent.title = state.isPrivate ? "Bookmarks are disabled in private tabs" : "Bookmark current page";
   document.body.classList.toggle("private-mode", Boolean(state.isPrivate));
+  if (document.activeElement !== searchProviderSelect && state.searchProvider) searchProviderSelect.value = state.searchProvider;
   const sitePermissions = Array.isArray(state.sitePermissions) ? state.sitePermissions : [];
   clearSitePermissions.disabled = sitePermissions.length === 0;
   clearSitePermissions.textContent = sitePermissions.length ? `Revoke access (${sitePermissions.length})` : "Site access";
@@ -212,6 +214,11 @@ bookmarkCurrent.addEventListener("click", async () => {
 showBookmarks.addEventListener("click", () => showLibrary("bookmarks", showBookmarks));
 showHistory.addEventListener("click", () => showLibrary("history", showHistory));
 showDownloads.addEventListener("click", () => showLibrary("downloads", showDownloads));
+searchProviderSelect.addEventListener("change", async () => {
+  const result = await api.setSearchProvider(searchProviderSelect.value);
+  if (result?.ok) status.textContent = "Search provider saved. New text searches will use " + searchProviderSelect.options[searchProviderSelect.selectedIndex].text + ".";
+  else status.textContent = result?.error || "Could not save search provider.";
+});
 clearSitePermissions.addEventListener("click", async () => {
   const result = await api.clearSitePermissions();
   if (result?.ok) status.textContent = result.cleared
