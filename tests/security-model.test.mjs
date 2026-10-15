@@ -70,3 +70,10 @@ test("renderer process exits produce visible recovery feedback", () => {
   assert.match(main, /The page renderer stopped unexpectedly/);
   assert.match(main, /Reload this tab to recover/);
 });
+
+test("TLS certificate errors are explicitly rejected without a bypass path", () => {
+  assert.match(main, /app\.on\("certificate-error"/);
+  assert.match(main, /event\.preventDefault\(\);\s*callback\(false\);/);
+  assert.match(main, /navigationErrorMessage\(code, description\)/);
+  assert.doesNotMatch(main, /callback\(true\)/);
+});
