@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const ci = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
 const secrets = await readFile(new URL("../.github/workflows/secrets.yml", import.meta.url), "utf8");
 const packages = await readFile(new URL("../.github/workflows/packages.yml", import.meta.url), "utf8");
+const packageSmoke = await readFile(new URL("../.github/workflows/package-smoke.yml", import.meta.url), "utf8");
 const smoke = await readFile(new URL("../scripts/smoke-electron.mjs", import.meta.url), "utf8");
 const collector = await readFile(new URL("../scripts/collect-release-artifacts.mjs", import.meta.url), "utf8");
 const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
@@ -60,4 +61,22 @@ test("release staging excludes unpacked build output and rejects empty packages"
   assert.ok(collector.includes("details.size > 0"));
   assert.ok(collector.includes("rm(artifactDirectory, { recursive: true, force: true })"));
   assert.ok(collector.includes("copyFile("));
+});
+
+
+test("Linux package smoke builds and inspects real distributable payloads", () => {
+  assert.ok(packageSmoke.includes("pull_request:"));
+  assert.ok(packageSmoke.includes("npx --yes electron-builder@26.0.12 --linux AppImage deb"));
+  assert.ok(packageSmoke.includes("node scripts/collect-release-artifacts.mjs linux"));
+  assert.ok(packageSmoke.includes("npm run checksums -- release/artifacts"));
+  assert.ok(packageSmoke.includes("node scripts/validate-release.mjs linux release/artifacts"));
+  assert.ok(packageSmoke.includes("dpkg-deb --info release/artifacts/*.deb"));
+  assert.ok(packageSmoke.includes("--appimage-extract"));
+  assert.ok(packageSmoke.includes("test -f squashfs-root/resources/app.asar"));
+  assert.ok(packageSmoke.includes("if-no-files-found: error"));
+});
+
+
+test("Linux Debian package maintainer metadata is configured", () => {
+  assert.match(pkg.build.linux.maintainer, /^[^<>]+ <[^<>@\s]+@[^<>\s]+>$/);
 });

@@ -1,0 +1,54 @@
+name: Linux packaged build smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-package-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-validate:
+    name: Build and inspect Linux packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build AppImage and Debian packages
+        run: npx --yes electron-builder@26.0.12 --linux AppImage deb
+      - name: Stage only distributable packages
+        run: node scripts/collect-release-artifacts.mjs linux
+      - name: Generate checksums
+        run: npm run checksums -- release/artifacts
+      - name: Validate package types and checksums
+        run: node scripts/validate-release.mjs linux release/artifacts
+      - name: Inspect Debian package metadata
+        run: dpkg-deb --info release/artifacts/*.deb
+      - name: Extract AppImage without requiring FUSE
+        working-directory: release
+        run: |
+          appimage="$(find artifacts -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
+          test -n "$appimage"
+          chmod +x "$appimage"
+          "$appimage" --appimage-extract
+          test -x squashfs-root/AppRun
+          test -f squashfs-root/resources/app.asar
+      - name: Upload validated Linux packages
+        uses: actions/upload-artifact@v6
+        with:
+          name: browser-c-linux-package-smoke
+          path: release/artifacts/*
+          if-no-files-found: error
+          retention-days: 7
