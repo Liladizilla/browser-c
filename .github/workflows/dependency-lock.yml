@@ -36,9 +36,16 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -C automation/real-package-lock
+          cp package-lock.json "$RUNNER_TEMP/generated-package-lock.json"
+          if git ls-remote --exit-code --heads origin automation/real-package-lock >/dev/null 2>&1; then
+            git fetch origin automation/real-package-lock
+            git switch -C automation/real-package-lock origin/automation/real-package-lock
+          else
+            git switch -C automation/real-package-lock
+          fi
+          cp "$RUNNER_TEMP/generated-package-lock.json" package-lock.json
           git add package-lock.json
           if ! git diff --cached --quiet; then
-            git commit -m "build: add generated npm lockfile"
+            git commit -m "build: update generated npm lockfile"
           fi
-          git push --force origin automation/real-package-lock
+          git push --force-with-lease origin automation/real-package-lock
