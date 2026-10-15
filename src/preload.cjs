@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld("browserC", Object.freeze({
   changeZoom: (action) => ipcRenderer.invoke("browser:zoom", String(action ?? "")),
   home: () => ipcRenderer.invoke("browser:home"),
   newTab: () => ipcRenderer.invoke("browser:new-tab"),
+  newPrivateTab: () => ipcRenderer.invoke("browser:new-private-tab"),
   activateTab: (id) => ipcRenderer.invoke("browser:activate-tab", Number(id)),
   closeTab: (id) => ipcRenderer.invoke("browser:close-tab", Number(id)),
   getState: () => ipcRenderer.invoke("browser:get-state"),

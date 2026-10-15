@@ -38,7 +38,8 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Find in page with next/previous navigation and Ctrl/Cmd+F entry.
 - [x] Per-tab page zoom controls with keyboard shortcuts and bounded 50%–300% scaling.
 - [ ] Print, devtools access, and accessibility review.
-- [ ] Private windows with isolated non-persistent sessions and leakage tests.
+- [x] Private tabs use unique non-persistent sessions; private URLs are excluded from saved sessions/history and completed-download persistence.
+- [ ] Add runtime leakage tests and review private-mode edge cases on supported operating systems.
 
 **Exit gate:** features have tests and defined behavior for crashes, denied permissions, network failure, and invalid input.
 

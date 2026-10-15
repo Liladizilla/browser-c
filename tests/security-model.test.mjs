@@ -7,7 +7,7 @@ const preload = await readFile(new URL("../src/preload.cjs", import.meta.url), "
 const chrome = await readFile(new URL("../src/renderer/index.html", import.meta.url), "utf8");
 
 test("permissions are explicitly prompted and grants are session-scoped", () => {
-  assert.match(main, /requestPermission\(origin, permission\)/);
+  assert.match(main, /requestPermission\(origin, permission, browserSession\)/);
   assert.match(main, /Allow for this session/);
   assert.match(main, /permissionGrants/);
   assert.match(main, /safeOrigin\(origin\)/);

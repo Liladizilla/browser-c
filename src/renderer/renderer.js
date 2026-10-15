@@ -6,6 +6,7 @@ const forward = document.querySelector("#forward");
 const reload = document.querySelector("#reload");
 const home = document.querySelector("#home");
 const newTab = document.querySelector("#new-tab");
+const newPrivateTab = document.querySelector("#new-private-tab");
 const tabsNode = document.querySelector("#tabs");
 const status = document.querySelector("#status");
 const bookmarkCurrent = document.querySelector("#bookmark-current");
@@ -62,7 +63,10 @@ function applyState(state = {}) {
   reload.textContent = state.loading ? "×" : "↻";
   reload.title = state.loading ? "Stop loading" : "Reload";
   reload.setAttribute("aria-label", reload.title);
-  status.textContent = state.error ? "Load error: " + state.error : state.loading ? "Loading…" : state.title || "Ready";
+  status.textContent = (state.isPrivate ? "Private session · " : "") + (state.error ? "Load error: " + state.error : state.loading ? "Loading…" : state.title || "Ready");
+  bookmarkCurrent.disabled = Boolean(state.isPrivate);
+  bookmarkCurrent.title = state.isPrivate ? "Bookmarks are disabled in private tabs" : "Bookmark current page";
+  document.body.classList.toggle("private-mode", Boolean(state.isPrivate));
   zoomReset.textContent = Math.round((state.zoomFactor || 1) * 100) + "%";
   zoomReset.title = "Reset zoom (Ctrl+0)";
   document.title = state.title ? state.title + " · Browser C" : "Browser C";
@@ -81,6 +85,7 @@ reload.addEventListener("click", async () => {
 });
 home.addEventListener("click", () => api.home());
 newTab.addEventListener("click", () => api.newTab());
+newPrivateTab.addEventListener("click", () => api.newPrivateTab());
 zoomOut.addEventListener("click", () => api.changeZoom("out"));
 zoomReset.addEventListener("click", () => api.changeZoom("reset"));
 zoomIn.addEventListener("click", () => api.changeZoom("in"));
@@ -204,7 +209,8 @@ document.addEventListener("keydown", (event) => {
   const modifier = event.ctrlKey || event.metaKey;
   if (!modifier) return;
   const key = event.key.toLowerCase();
-  if (key === "t") { event.preventDefault(); api.newTab(); }
+  if (key === "n" && event.shiftKey) { event.preventDefault(); api.newPrivateTab(); }
+  else if (key === "t") { event.preventDefault(); api.newTab(); }
   else if (key === "w") { event.preventDefault(); api.closeTab(currentState.activeTabId); }
   else if (key === "l") { event.preventDefault(); address.focus(); address.select(); }
   else if (key === "f") { event.preventDefault(); openFindBar(); }
