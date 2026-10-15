@@ -14,6 +14,14 @@ contextBridge.exposeInMainWorld("browserC", Object.freeze({
   toggleBookmark: (item) => ipcRenderer.invoke("browser:bookmarks:toggle", { url: String(item?.url ?? ""), title: String(item?.title ?? "") }),
   getHistory: () => ipcRenderer.invoke("browser:history:get"),
   clearHistory: () => ipcRenderer.invoke("browser:history:clear"),
+  getDownloads: () => ipcRenderer.invoke("browser:downloads:get"),
+  cancelDownload: (id) => ipcRenderer.invoke("browser:downloads:cancel", String(id)),
+  onDownloads: (callback) => {
+    if (typeof callback !== "function") return () => {};
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on("browser:downloads:state", listener);
+    return () => ipcRenderer.removeListener("browser:downloads:state", listener);
+  },
   onFocusAddress: (callback) => {
     if (typeof callback !== "function") return () => {};
     const listener = () => callback();
