@@ -159,6 +159,7 @@ test("Ctrl+J and Ctrl+H open downloads and history panels", async () => {
 
 test("Escape closes the library panel and restores focus to its trigger", async () => {
   const h = createHarness();
+  h.elements.get("#find-bar").hidden = true;
   const trigger = h.elements.get("#show-history");
   await trigger.fire("click");
   const event = { key: "Escape", ctrlKey: false, metaKey: false, preventDefault() { this.prevented = true; } };
