@@ -29,8 +29,9 @@ ${result.error?.stack ?? output.slice(-6000)}`
   );
 }
 
-assert.match(output, /BROWSER_C_UI_SMOKE_PASS/, "Electron should render the browser chrome and expose the preload bridge");
+const uiSmokePassed = /BROWSER_C_UI_SMOKE_PASS/.test(output);
 child.kill("SIGTERM");
+assert.ok(uiSmokePassed, "Electron should render the browser chrome and expose the preload bridge.\n" + output.slice(-6000));
 const shutdown = await Promise.race([
   exitResult,
   new Promise((resolve) => setTimeout(() => resolve("timeout"), 3_000))
