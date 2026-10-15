@@ -15,6 +15,12 @@ test("domain names receive HTTPS by default", () => {
 test("plain text becomes an encoded search query", () => {
   assert.equal(resolveAddress("cats and dogs"), "https://www.google.com/search?q=cats%20and%20dogs");
 });
+test("plain-text searches use the selected provider", () => {
+  assert.equal(resolveAddress("cats and dogs", "duckduckgo"), "https://duckduckgo.com/?q=cats%20and%20dogs");
+  assert.equal(resolveAddress("cats and dogs", "bing"), "https://www.bing.com/search?q=cats%20and%20dogs");
+  assert.equal(resolveAddress("cats and dogs", "brave"), "https://search.brave.com/search?q=cats%20and%20dogs");
+  assert.equal(resolveAddress("cats and dogs", "unknown"), "https://www.google.com/search?q=cats%20and%20dogs");
+});
 test("localhost addresses are accepted for development", () => {
   assert.equal(resolveAddress("localhost:3000"), "http://localhost:3000/");
 });
