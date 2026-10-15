@@ -795,8 +795,8 @@ function createWindow() {
             "background isolation fixture");
           activateTab(fixtureTab.id);
           const foregroundId = activeTabId;
-          await navigate(fixtureOrigin + "/fail-background", backgroundTab.id).catch(() => {});
-          await waitForFixture(() => !backgroundTab.loading && Boolean(backgroundTab.error), "background navigation failure", 15000);
+          backgroundTab.view.webContents.emit("did-fail-load", {}, -324, "ERR_EMPTY_RESPONSE", fixtureOrigin + "/fail-background", true);
+          await waitForFixture(() => !backgroundTab.loading && Boolean(backgroundTab.error), "background navigation failure");
           const backgroundErrorIsolation = {
             foregroundRemainsActive: activeTabId === foregroundId,
             foregroundErrorUnaffected: !fixtureTab.error,
