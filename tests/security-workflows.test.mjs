@@ -121,6 +121,7 @@ test("Windows and macOS package smoke builds and inspects distributable artifact
 test("SBOM generation resolves the npm command on Windows runners", () => {
   assert.ok(sbomScript.includes('process.platform === "win32" ? "npm.cmd" : "npm"'));
   assert.ok(sbomScript.includes("spawnSync(npmCommand"));
+  assert.ok(sbomScript.includes('shell: process.platform === "win32"'));
 });
 
 test("cross-platform smoke allows macOS more time to report background navigation failures", () => {
