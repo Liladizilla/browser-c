@@ -308,7 +308,7 @@ ipcMain.handle("browser:history:get", () => profile.history.slice(0, 100));
 ipcMain.handle("browser:downloads:get", () => [...downloads.values()].map(downloadSnapshot));
 ipcMain.handle("browser:downloads:cancel", (_event, id) => {
   const download = downloads.get(String(id));
-  if (!download || download.state !== "in-progress") return { ok: false };
+  if (!download || !["choosing-location", "in-progress"].includes(download.state)) return { ok: false };
   download.item.cancel();
   download.state = "cancelled";
   sendDownloads();
