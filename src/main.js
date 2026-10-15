@@ -41,7 +41,7 @@ const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
 const canGoBack = (contents) => contents.navigationHistory.canGoBack();
 const canGoForward = (contents) => contents.navigationHistory.canGoForward();
 function tabSnapshot(tab) {
-  return { id: tab.id, url: tab.url, title: tab.title || "New Tab", loading: Boolean(tab.loading),
+  return { id: tab.id, url: tab.url, title: tab.title || "New Tab", loading: Boolean(tab.loading), error: tab.error || "",
     canGoBack: canGoBack(tab.view.webContents), canGoForward: canGoForward(tab.view.webContents),
     zoomFactor: tab.view.webContents.getZoomFactor(), active: tab.id === activeTabId, isPrivate: Boolean(tab.isPrivate) };
 }
@@ -268,7 +268,7 @@ function attachTabEvents(tab) {
   contents.on("will-redirect", (event, url) => { if (!isWebUrl(url)) event.preventDefault(); });
   contents.on("did-start-navigation", (_event, url, _inPlace, isMainFrame) => {
     if (isMainFrame && isWebUrl(url)) tab.url = url;
-    tab.loading = true; sendState({ error: "" });
+    tab.loading = true; tab.error = ""; sendState({ error: "" });
   });
   contents.on("page-title-updated", (_event, title) => {
     tab.title = title || "New Tab";
@@ -283,7 +283,7 @@ function attachTabEvents(tab) {
   });
   contents.on("did-navigate-in-page", (_event, url) => { tab.url = url; sendState(); scheduleSessionSave(); });
   contents.on("did-finish-load", () => {
-    tab.url = contents.getURL(); tab.title = contents.getTitle() || "New Tab"; tab.loading = false; sendState({ error: "" });
+    tab.url = contents.getURL(); tab.title = contents.getTitle() || "New Tab"; tab.loading = false; tab.error = ""; sendState({ error: "" });
   });
   contents.on("did-stop-loading", () => {
     tab.loading = false;
@@ -292,7 +292,8 @@ function attachTabEvents(tab) {
   contents.on("did-fail-load", (_event, code, description, validatedURL, isMainFrame) => {
     if (isMainFrame && code !== -3) {
       tab.loading = false;
-      if (tab.id === activeTabId) sendState({ error: description, url: validatedURL });
+      tab.error = description || "The page could not be loaded.";
+      if (tab.id === activeTabId) sendState({ error: tab.error, url: validatedURL });
     }
   });
   contents.on("before-input-event", (event, input) => {
@@ -331,7 +332,8 @@ function createTab(url = "https://www.google.com/", privateMode = false) {
   activeTabId = id; layoutTabs();
   view.webContents.loadURL(url).catch(() => {
     tab.loading = false;
-    if (tab.id === activeTabId) sendState({ error: "The page could not be loaded." });
+    tab.error = tab.error || "The page could not be loaded.";
+    if (tab.id === activeTabId) sendState({ error: tab.error });
   });
   sendState(); scheduleSessionSave();
   return tabSnapshot(tab);
@@ -493,6 +495,10 @@ function createWindow() {
         const fixtureServer = createServer((request, response) => {
           const route = new URL(request.url || "/", "http://127.0.0.1").pathname;
           fixtureHits.set(route, (fixtureHits.get(route) || 0) + 1);
+          if (route === "/fail") {
+            request.socket.destroy();
+            return;
+          }
           if (route === "/slow") {
             const timer = setTimeout(() => {
               response.writeHead(200, { "content-type": "text/html" });
@@ -545,6 +551,26 @@ function createWindow() {
           const previousReloadCount = fixtureHits.get("/two") || 0;
           fixtureTab.view.webContents.reload();
           await waitForFixture(() => (fixtureHits.get("/two") || 0) > previousReloadCount && !fixtureTab.loading, "reload");
+          let observedNavigationError = "";
+          const onFixtureState = (_event, state) => {
+            if (state.activeTabId === fixtureTab.id && state.error) observedNavigationError = state.error;
+          };
+          windowRef.webContents.on("browser:state", onFixtureState);
+          try {
+            await navigate(fixtureOrigin + "/fail", fixtureTab.id).catch(() => {});
+            await waitForFixture(() => !fixtureTab.loading && Boolean(fixtureTab.error), "failed navigation feedback");
+            const failedNavigationShowsError = Boolean(observedNavigationError || fixtureTab.error);
+            await navigate(fixtureOrigin + "/recovered", fixtureTab.id);
+            await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/recovered") && !fixtureTab.loading, "successful navigation after failure");
+            const successfulNavigationClearsError = !fixtureTab.error;
+            const navigationErrorRecovery = { failedNavigationShowsError, successfulNavigationClearsError, error: fixtureTab.error };
+            if (!navigationErrorRecovery.failedNavigationShowsError || !navigationErrorRecovery.successfulNavigationClearsError) {
+              throw new Error("Navigation error recovery assertions failed: " + JSON.stringify(navigationErrorRecovery));
+            }
+            console.log("BROWSER_C_NAVIGATION_ERROR_RECOVERY_PASS " + JSON.stringify(navigationErrorRecovery));
+          } finally {
+            windowRef.webContents.removeListener("browser:state", onFixtureState);
+          }
           const slowNavigation = navigate(fixtureOrigin + "/slow", fixtureTab.id).catch(() => {});
           await waitForFixture(() => fixtureTab.url.endsWith("/slow") && fixtureTab.loading, "slow navigation start");
           fixtureTab.view.webContents.stop();
