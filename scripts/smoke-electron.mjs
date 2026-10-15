@@ -29,6 +29,7 @@ ${result.error?.stack ?? output.slice(-6000)}`
   );
 }
 
+assert.match(output, /BROWSER_C_UI_SMOKE_PASS/, "Electron should render the browser chrome and expose the preload bridge");
 child.kill("SIGTERM");
 const shutdown = await Promise.race([
   exitResult,
