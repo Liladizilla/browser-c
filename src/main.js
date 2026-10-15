@@ -290,7 +290,7 @@ function attachTabEvents(tab) {
   });
   contents.on("did-navigate-in-page", (_event, url) => { tab.url = url; sendState(); scheduleSessionSave(); });
   contents.on("did-finish-load", () => {
-    tab.url = contents.getURL(); tab.title = contents.getTitle() || "New Tab"; tab.loading = false; tab.error = ""; sendState();
+    tab.url = contents.getURL(); tab.title = contents.getTitle() || "New Tab"; tab.loading = false; tab.error = ""; sendState({ error: "" });
   });
   contents.on("did-stop-loading", () => {
     tab.loading = false;
