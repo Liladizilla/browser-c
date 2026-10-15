@@ -41,6 +41,10 @@ test("only completed non-private downloads with a save path can be persisted", (
   assert.equal(shouldPersistCompletedDownload({ ...base, isPrivate: false }), true);
   assert.equal(shouldPersistCompletedDownload({ ...base, isPrivate: false, state: "in-progress" }), false);
   assert.equal(shouldPersistCompletedDownload({ ...base, isPrivate: false, savePath: null }), false);
+  assert.equal(shouldPersistCompletedDownload({ ...base, isPrivate: false, savePath: "" }), false);
+  assert.equal(shouldPersistCompletedDownload({ ...base, isPrivate: false, savePath: "   " }), false);
+  assert.equal(shouldPersistCompletedDownload({ ...base, savePath: "/downloads/report.pdf" }), false,
+    "unknown privacy state must fail closed");
 });
 
 test("closing a private tab cancels only downloads that are still active", () => {

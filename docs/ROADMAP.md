@@ -40,7 +40,9 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Per-tab page zoom controls with keyboard shortcuts and bounded 50%–300% scaling.
 - [ ] Print, devtools access, and accessibility review.
 - [x] Private tabs use unique non-persistent sessions; private URLs are excluded from saved sessions/history and completed-download persistence.
-- [ ] Add runtime leakage tests and review private-mode edge cases on supported operating systems.
+- [x] Add Linux Electron smoke coverage for private-session cookie/storage isolation, history/session exclusions, and cleanup of private cookies on close.
+- [ ] Add persisted-profile leakage tests for private downloads, session restore, permission grants, and crash/restart scenarios.
+- [ ] Review private-mode edge cases on Windows and macOS using actual packaged builds.
 
 **Exit gate:** features have tests and defined behavior for crashes, denied permissions, network failure, and invalid input.
 

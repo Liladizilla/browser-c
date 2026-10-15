@@ -36,3 +36,18 @@ test("local chrome has a restrictive content security policy", () => {
   assert.match(chrome, /object-src 'none'/);
   assert.match(chrome, /connect-src 'none'/);
 });
+
+test("private tabs use isolated non-persistent sessions and clear their storage on close", () => {
+  assert.match(main, /private-[" ]?\s*\+\s*randomUUID\(\)/);
+  assert.match(main, /if\s*\(privateMode\)\s*privateSessions\.add\(view\.webContents\.session\)/);
+  assert.match(main, /tab\.view\.webContents\.session\.clearStorageData\(\)/);
+  assert.match(main, /tab\.view\.webContents\.session\.clearCache\(\)/);
+});
+
+test("risky download prompts default to cancellation and disclose no malware scan", () => {
+  assert.match(main, /title:\s*"Potentially unsafe download"/);
+  assert.match(main, /buttons:\s*\["Cancel download", "Continue to save"\]/);
+  assert.match(main, /defaultId:\s*0/);
+  assert.match(main, /Browser C does not scan downloaded files/);
+  assert.match(main, /if\s*\(confirmation\.response !== 1\)\s*\{/);
+});
