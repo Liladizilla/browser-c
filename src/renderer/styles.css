@@ -94,3 +94,37 @@ body.private-mode .security-mark { color: #b69be0; }
 .tools-menu summary:hover, .tools-menu[open] summary { background: #2a2e32; border-color: #3b4147; }
 .tools-menu-panel { position: absolute; z-index: 10; top: 28px; right: 0; width: 180px; padding: 5px; display: grid; gap: 3px; border: 1px solid #3b4147; border-radius: 8px; background: #191d21; box-shadow: 0 10px 25px #0009; }
 .tools-menu-panel button { width: 100%; flex: 0 0 auto; height: 30px; padding: 0 9px; text-align: left; font-size: 11px; }
+
+/* Browser settings are functional controls, not a mock settings screenshot. */
+.settings-panel { position: absolute; z-index: 6; top: 136px; right: 12px; width: min(360px, calc(100vw - 24px)); max-height: calc(100vh - 160px); overflow: auto; padding: 12px; border: 1px solid #3b4147; border-radius: 10px; background: #191d21; color: #f1f2f3; }
+.settings-panel[hidden] { display: none; }
+.settings-form { display: grid; gap: 7px; padding-top: 10px; }
+.settings-form label { color: #aab1b8; font-size: 11px; }
+.settings-form input, .settings-form select { width: 100%; min-width: 0; height: 32px; padding: 0 9px; border: 1px solid #343a40; border-radius: 6px; background: #0e1012; color: #f1f2f3; font: inherit; font-size: 12px; }
+.settings-form .settings-save { width: 100%; height: 32px; flex-basis: auto; border: 1px solid #8b6b2e; background: #302819; color: #f0d28b; font-size: 11px; }
+.settings-note { margin: 4px 0; color: #929ba3; font-size: 10px; line-height: 1.5; }
+#open-settings { flex: 0 0 auto; width: auto; height: 23px; padding: 0 9px; border: 1px solid #343a40; border-radius: 6px; font-size: 11px; }
+:root[data-theme="light"] { color-scheme: light; background: #f4f5f6; color: #202327; }
+:root[data-theme="light"] body { background: #f4f5f6; color: #202327; }
+:root[data-theme="light"] .toolbar { background: #e8eaed; border-color: #c7cbd0; }
+:root[data-theme="light"] .brand, :root[data-theme="light"] .tab-select, :root[data-theme="light"] button { color: #30343a; }
+:root[data-theme="light"] .tab { background: #f5f6f7; border-color: #c8cdd2; }
+:root[data-theme="light"] .tab.active { background: #fff; border-color: #b3b9c0; border-bottom-color: #b78625; }
+:root[data-theme="light"] #address-form, :root[data-theme="light"] #address, :root[data-theme="light"] #find-query { background: #fff; color: #202327; }
+:root[data-theme="light"] #address-form, :root[data-theme="light"] #find-query, :root[data-theme="light"] #search-provider { border-color: #c8cdd2; }
+:root[data-theme="light"] #search-provider, :root[data-theme="light"] .settings-form input, :root[data-theme="light"] .settings-form select { background: #fff; color: #202327; border-color: #c8cdd2; }
+:root[data-theme="light"] .library-panel, :root[data-theme="light"] .settings-panel, :root[data-theme="light"] .tools-menu-panel, :root[data-theme="light"] .find-bar { background: #fff; color: #202327; border-color: #c8cdd2; }
+:root[data-theme="light"] .library-heading, :root[data-theme="light"] .settings-form label { color: #30343a; border-color: #d9dde1; }
+:root[data-theme="light"] .library-entry:hover, :root[data-theme="light"] button:hover:not(:disabled) { background: #e9ecef; }
+:root[data-theme="light"] .library-empty, :root[data-theme="light"] .settings-note, :root[data-theme="light"] .library-entry small, :root[data-theme="light"] #status { color: #646c75; }
+:root[data-theme="light"] .settings-form .settings-save { background: #f7edd7; color: #634710; border-color: #d4b36d; }
+:root[data-theme="system"] { color-scheme: light dark; }
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] { color-scheme: dark; background: #101214; color: #f1f2f3; }
+}
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] { color-scheme: light; background: #f4f5f6; color: #202327; }
+  :root[data-theme="system"] body { background: #f4f5f6; color: #202327; }
+  :root[data-theme="system"] .toolbar { background: #e8eaed; border-color: #c7cbd0; }
+  :root[data-theme="system"] .library-panel, :root[data-theme="system"] .settings-panel, :root[data-theme="system"] .tools-menu-panel, :root[data-theme="system"] .find-bar { background: #fff; color: #202327; border-color: #c8cdd2; }
+}
