@@ -2,7 +2,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
 body { background: #101214; }
-.toolbar { position: relative; z-index: 1; height: 112px; padding: 8px 12px 18px; background: #171a1d; border-bottom: 1px solid #30353a; display: grid; grid-template-rows: 34px 34px; gap: 6px; }
+.toolbar { position: relative; z-index: 1; height: 148px; padding: 8px 12px 18px; background: #171a1d; border-bottom: 1px solid #30353a; display: grid; grid-template-rows: 34px 34px 24px; gap: 4px; }
 .tab-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .brand { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; font-size: 11px; font-weight: 650; color: #e6e8ea; }
 .mark { display: grid; place-items: center; width: 19px; height: 19px; border-radius: 5px; background: #d6a64c; color: #161616; font-weight: 850; font-size: 12px; }
@@ -25,3 +25,18 @@ button:focus-visible, input:focus-visible { outline: 2px solid #d6a64c; outline-
 .go { height: 24px; width: 24px; flex-basis: 24px; font-size: 14px; }
 #status { position: absolute; left: 15px; bottom: 4px; color: #8d969f; font-size: 10px; max-width: calc(100% - 30px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
 @media (max-width: 760px) { .toolbar { padding-inline: 7px; } .brand { font-size: 10px; } .tab { min-width: 75px; } }
+
+.library-controls { display: flex; align-items: center; gap: 6px; padding-left: 80px; }
+.library-controls button, .clear-history { flex: 0 0 auto; width: auto; height: 23px; padding: 0 9px; border: 1px solid #343a40; border-radius: 6px; font-size: 11px; }
+.library-controls #bookmark-current { color: #e4c27a; }
+.library-panel { position: absolute; z-index: 5; top: 148px; left: 12px; width: min(420px, calc(100vw - 24px)); max-height: calc(100vh - 160px); overflow: auto; padding: 10px; border: 1px solid #3b4147; border-radius: 10px; background: #191d21; color: #f1f2f3; box-shadow: 0 10px 30px #0008; }
+.library-panel[hidden] { display: none; }
+.library-heading { display: flex; justify-content: space-between; align-items: center; padding: 0 0 8px; border-bottom: 1px solid #343a40; font-size: 12px; }
+.library-heading button { width: 24px; flex-basis: 24px; }
+.library-list { display: grid; gap: 4px; padding-top: 7px; }
+.library-entry { display: flex; gap: 8px; align-items: center; padding: 7px; border-radius: 6px; }
+.library-entry:hover { background: #282d32; }
+.library-entry button { flex: 1; width: auto; height: auto; min-width: 0; text-align: left; font-size: 11px; overflow-wrap: anywhere; padding: 4px; }
+.library-entry small { display: block; color: #9aa2aa; font-size: 10px; margin-top: 3px; }
+.library-empty { padding: 14px 6px; color: #9aa2aa; font-size: 11px; }
+.clear-history { margin-top: 8px; }
