@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld("browserC", Object.freeze({
   stop: () => ipcRenderer.invoke("browser:stop"),
   findInPage: (query) => ipcRenderer.invoke("browser:find:start", String(query ?? "")),
   findNext: (query) => ipcRenderer.invoke("browser:find:next", String(query ?? "")),
+  findPrevious: (query) => ipcRenderer.invoke("browser:find:previous", String(query ?? "")),
   stopFind: () => ipcRenderer.invoke("browser:find:stop"),
   changeZoom: (action) => ipcRenderer.invoke("browser:zoom", String(action ?? "")),
   home: () => ipcRenderer.invoke("browser:home"),
