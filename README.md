@@ -1,43 +1,49 @@
 # Browser C
 
-**Browser C** is an independent cross-platform desktop browser targeting Windows, macOS, and Linux, with CharisOS as a future research target.
+**Browser C** is an early cross-platform desktop browser prototype targeting Windows, macOS, and Linux, with CharisOS as a future research target. It uses Electron's bundled Chromium engine rather than attempting to implement a new web engine.
 
-## Current stage
+## Current capabilities
 
-The first Electron shell now exists on the `feat/electron-browser-shell` branch. It uses Electron's bundled Chromium engine and includes a navigation toolbar, address/search input, back/forward/reload/stop/home controls, and an isolated website view.
+- Multi-tab browsing with keyboard shortcuts and session restore.
+- HTTP/HTTPS address navigation, bookmarks, browsing history, and page find/zoom controls.
+- Download prompts, progress/cancellation, bounded completed-download history, and reveal-in-folder actions.
+- Session-scoped prompts for a supported set of website permissions, with unsupported and insecure requests denied by default.
+- Automated JavaScript checks, tests, and CodeQL scanning.
+- An initial cross-platform packaging workflow for Linux, Windows, and macOS.
 
-This is an early prototype, not yet a complete daily-use browser. Tabs, bookmarks, history, download management, user-controlled permissions, private sessions, installer packaging, and browser-level security testing remain future work.
+This remains a prototype, not a finished or security-certified daily-use browser. Installer builds still need actual launch/navigation smoke tests on each OS. Private browsing, a generated dependency lockfile, signing/notarization, and complete release validation remain outstanding.
 
-## Technology and security
+## Security baseline
 
-- Electron + JavaScript modules, with the Electron version pinned in the application manifest.
-- Chromium supplied by Electron; no attempt to implement a new web engine.
-- Context isolation, sandboxing, disabled Node integration for both chrome and visited pages, and a narrow preload API.
-- Website-created windows blocked by default; web permissions denied until user-facing permission controls exist.
-- Address navigation restricted to HTTP/HTTPS. Plain text becomes a web search query.
-- Graphics and media depend on Chromium/Electron support and must be verified on target hardware.
+- Electron Chromium supplies the browser engine.
+- Context isolation, sandboxing, disabled Node integration for browser chrome and visited pages, and a narrow preload IPC API.
+- Website-created windows are blocked by default.
+- Navigation is restricted to HTTP and HTTPS.
+- Website permissions are denied unless an explicitly supported permission is allowed for the current app session.
 
-Read [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), and the [Security model](docs/SECURITY_MODEL.md).
+Read [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security model](docs/SECURITY_MODEL.md), and [Release engineering](docs/RELEASES.md).
 
 ## Development
 
-Install a supported Node.js release and project dependencies, then run the app with the documented start command. Foundation tests run with:
+Use Node.js 24 for CI parity. Install dependencies and run:
 
 ```sh
+npm install --no-package-lock --no-audit --no-fund
 npm test
 npm run validate
 npm run check
+npm start
 ```
 
-Linux, Windows, and macOS are CI targets. A passing foundation test does not establish that every website, GPU, codec, or hardware configuration works.
+A generated `package-lock.json` is not committed yet, so dependency installation is not fully reproducible. Do not treat green unit tests as proof that all websites, GPU drivers, codecs, or platform configurations work.
 
 ## Platform goals
 
 | Platform | Goal | Status |
 | --- | --- | --- |
-| Windows 10/11 x64 | Desktop app | Prototype work |
-| macOS supported Electron architectures | Desktop app | Prototype work |
-| Linux x64 | Desktop app | Prototype work |
+| Windows 10/11 x64 | Desktop app | Packaging workflow added; runtime smoke tests pending |
+| macOS supported Electron architectures | Desktop app | Packaging workflow added; runtime smoke tests pending |
+| Linux x64 | Desktop app | Packaging workflow added; runtime smoke tests pending |
 | CharisOS | Native integration or compatible browser host | Research required |
 
 ## License
