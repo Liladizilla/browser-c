@@ -7,6 +7,12 @@ const reload = document.querySelector("#reload");
 const home = document.querySelector("#home");
 const newTab = document.querySelector("#new-tab");
 const newPrivateTab = document.querySelector("#new-private-tab");
+const windowMinimize = document.querySelector("#window-minimize");
+const windowMaximize = document.querySelector("#window-maximize");
+const windowClose = document.querySelector("#window-close");
+const printPage = document.querySelector("#print-page");
+const savePageAs = document.querySelector("#save-page-as");
+const openDevTools = document.querySelector("#open-devtools");
 const tabsNode = document.querySelector("#tabs");
 const status = document.querySelector("#status");
 const retryNavigation = document.querySelector("#retry-navigation");
@@ -79,6 +85,11 @@ tabsNode.addEventListener("keydown", (event) => {
 function applyState(state = {}) {
   currentState = { ...currentState, ...state };
   renderTabs(currentState.tabs || []);
+  if (typeof state.windowMaximized === "boolean") {
+    windowMaximize.textContent = state.windowMaximized ? "❐" : "□";
+    windowMaximize.title = state.windowMaximized ? "Restore window" : "Maximize window";
+    windowMaximize.setAttribute("aria-label", windowMaximize.title);
+  }
   if (typeof state.url === "string" && document.activeElement !== address) address.value = state.url;
   back.disabled = !state.canGoBack;
   forward.disabled = !state.canGoForward;
@@ -122,6 +133,25 @@ reload.addEventListener("click", async () => {
 home.addEventListener("click", () => api.home());
 newTab.addEventListener("click", () => api.newTab());
 newPrivateTab.addEventListener("click", () => api.newPrivateTab());
+windowMinimize.addEventListener("click", () => api.minimizeWindow());
+windowMaximize.addEventListener("click", () => api.toggleMaximizeWindow());
+windowClose.addEventListener("click", () => api.closeWindow());
+printPage.addEventListener("click", async () => {
+  document.querySelector(".tools-menu").open = false;
+  const result = await api.printPage();
+  if (!result?.ok && !result?.canceled) status.textContent = result?.error || "Could not print this page.";
+});
+savePageAs.addEventListener("click", async () => {
+  document.querySelector(".tools-menu").open = false;
+  const result = await api.savePageAs();
+  if (result?.ok) status.textContent = "Webpage saved.";
+  else if (!result?.canceled) status.textContent = result?.error || "Could not save this page.";
+});
+openDevTools.addEventListener("click", async () => {
+  document.querySelector(".tools-menu").open = false;
+  const result = await api.openDevTools();
+  if (!result?.ok) status.textContent = result?.error || "Could not open developer tools.";
+});
 zoomOut.addEventListener("click", () => api.changeZoom("out"));
 zoomReset.addEventListener("click", () => api.changeZoom("reset"));
 zoomIn.addEventListener("click", () => api.changeZoom("in"));
