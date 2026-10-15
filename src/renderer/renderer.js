@@ -140,7 +140,11 @@ async function showLibrary(mode, trigger = null) {
   libraryMode = mode;
   if (trigger) libraryTrigger = trigger;
   libraryPanel.hidden = false;
+  for (const [trigger, triggerMode] of [[showBookmarks, "bookmarks"], [showHistory, "history"], [showDownloads, "downloads"]]) {
+    trigger.setAttribute("aria-expanded", String(mode === triggerMode));
+  }
   libraryTitle.textContent = mode === "bookmarks" ? "Bookmarks" : mode === "history" ? "History" : "Downloads";
+  closeLibrary.focus();
   clearHistory.hidden = mode !== "history";
   libraryList.replaceChildren();
   const entries = mode === "bookmarks" ? await api.getBookmarks() : mode === "history" ? await api.getHistory() : downloadState;
@@ -195,7 +199,7 @@ async function showLibrary(mode, trigger = null) {
         : entry.url;
       open.append(title, detail);
       open.addEventListener("click", async () => {
-        libraryPanel.hidden = true;
+        closeLibraryPanel();
         await api.navigate(entry.url);
       });
       row.append(open);
@@ -240,6 +244,9 @@ api.onDownloads((items) => {
 api.getDownloads().then((items) => { downloadState = items; }).catch(() => {});
 function closeLibraryPanel() {
   libraryPanel.hidden = true;
+  for (const trigger of [showBookmarks, showHistory, showDownloads]) {
+    trigger.setAttribute("aria-expanded", "false");
+  }
   libraryTrigger?.focus();
 }
 closeLibrary.addEventListener("click", closeLibraryPanel);
