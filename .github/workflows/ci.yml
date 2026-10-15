@@ -34,7 +34,7 @@ jobs:
         run: npm run validate
       - name: Check application JavaScript syntax
         run: npm run check
-      - name: Run navigation tests
+      - name: Run automated tests
         run: npm test
 
   electron-startup-smoke:

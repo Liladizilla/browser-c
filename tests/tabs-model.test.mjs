@@ -51,7 +51,7 @@ test("bookmarks and history use narrow IPC endpoints and persistent profile stor
 });
 
 test("history records only web URLs and remains bounded", () => {
-  assert.match(main, /if \(tab\.isPrivate \|\| !isWebUrl\(tab\.url\)\) return/);
+  assert.match(main, /shouldRecordHistory\(tab, isWebUrl\)/);
   assert.match(main, /MAX_HISTORY_ITEMS/);
   assert.match(main, /recordHistory\(tab\)/);
 });
@@ -114,15 +114,16 @@ test("download event listeners are attached before the save dialog await", () =>
 });
 
 test("private tabs use unique non-persistent partitions and never enter saved sessions", () => {
-  assert.match(main, /private-" \+ randomUUID\(\)/);
+  assert.match(main, /private-"\s*\+\s*randomUUID\(\)/);
   assert.match(main, /: "persist:browser-c"/);
-  assert.match(main, /tabs\.filter\(\(tab\) => !tab\.isPrivate\)/);
-  assert.match(main, /if \(tab\.isPrivate \|\| !isWebUrl\(tab\.url\)\) return/);
+  assert.match(main, /persistableTabs\(tabs, isWebUrl, 20\)/);
+  assert.match(main, /shouldRecordHistory\(tab, isWebUrl\)/);
   assert.match(main, /isPrivate: Boolean\(tab\?\.isPrivate\)/);
 });
 test("private tabs do not persist downloads or bookmark current pages", () => {
-  assert.match(main, /if \(download\.isPrivate \|\| download\.state !== "completed"/);
-  assert.match(main, /if \(activeTab\(\)\?\.isPrivate\) return \{ ok: false, error: "Bookmarks are disabled in private tabs\." \}/);
+  assert.match(main, /shouldPersistCompletedDownload\(download\)/);
+  assert.match(main, /canBookmarkTab\(activeTab\(\)\)/);
+  assert.match(main, /shouldCancelDownloadOnTabClose\(download\)/);
   assert.match(main, /if \(download\.tabId !== tab\.id\) continue/);
 });
 test("permission grants are scoped to each Electron session", () => {
