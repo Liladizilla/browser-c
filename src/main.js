@@ -475,19 +475,8 @@ function createWindow() {
           || narrowLayout.rows.some((row) => row.scrollWidth > row.clientWidth)) {
           throw new Error("Responsive layout overflow at 520px: " + JSON.stringify(narrowLayout));
         }
-        const screenshotDir = process.env.BROWSER_C_SMOKE_SCREENSHOT_DIR;
-        if (screenshotDir) {
-          await mkdir(screenshotDir, { recursive: true });
-          const narrowImage = await windowRef.webContents.capturePage();
-          await writeFile(path.join(screenshotDir, "browser-c-ui-520.png"), narrowImage.toPNG());
-        }
         windowRef.setSize(1280, 840);
-        await new Promise((resolve) => setTimeout(resolve, 150));
-        if (screenshotDir) {
-          const desktopImage = await windowRef.webContents.capturePage();
-          await writeFile(path.join(screenshotDir, "browser-c-ui-1280.png"), desktopImage.toPNG());
-        }
-        console.log("BROWSER_C_UI_SMOKE_PASS " + JSON.stringify({ ...result, interactions, narrowLayout, screenshotsCaptured: Boolean(screenshotDir) }));
+        console.log("BROWSER_C_UI_SMOKE_PASS " + JSON.stringify({ ...result, interactions, narrowLayout }));
       } catch (error) {
         console.error("BROWSER_C_UI_SMOKE_FAIL " + (error?.stack || error));
         app.exit(1);
