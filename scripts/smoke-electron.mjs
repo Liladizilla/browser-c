@@ -18,19 +18,27 @@ const exitResult = new Promise((resolve) => {
 });
 
 const smokeCompletion = new Promise((resolve) => {
-  const poll = setInterval(() => {
-    if (/BROWSER_C_UI_SMOKE_(?:PASS|FAIL)/.test(output)) {
-      clearInterval(poll);
-      resolve("completed");
-    }
-  }, 50);
+  const check = () => {
+    if (!/BROWSER_C_UI_SMOKE_(?:PASS|FAIL)/.test(output)) return;
+    child.stdout.off("data", check);
+    child.stderr.off("data", check);
+    resolve("completed");
+  };
+  child.stdout.on("data", check);
+  child.stderr.on("data", check);
+  check();
 });
 
+let timeoutHandle;
+const timeout = new Promise((resolve) => {
+  timeoutHandle = setTimeout(() => resolve({ kind: "timeout" }), startupWindowMs);
+});
 const result = await Promise.race([
   exitResult.then((exit) => ({ kind: "exit", exit })),
   smokeCompletion.then(() => ({ kind: "smoke" })),
-  new Promise((resolve) => setTimeout(() => resolve({ kind: "timeout" }), startupWindowMs))
+  timeout
 ]);
+clearTimeout(timeoutHandle);
 
 if (result.kind === "exit") {
   throw new Error(
