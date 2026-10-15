@@ -96,3 +96,19 @@ test("zoom controls clamp page zoom and expose keyboard shortcuts", () => {
   assert.match(main, /key === "f"/);
   assert.match(main, /key === "0"/);
 });
+
+test("completed downloads are persisted with a bounded history and reveal actions", () => {
+  assert.match(main, /MAX_DOWNLOADS = 100/);
+  assert.match(main, /rememberCompletedDownload/);
+  assert.match(main, /profile\.downloads/);
+  assert.match(main, /browser:downloads:reveal/);
+  assert.match(main, /state !== "completed"/);
+  assert.match(preload, /revealDownload/);
+  assert.match(renderer, /Show downloaded file in its folder/);
+});
+test("download event listeners are attached before the save dialog await", () => {
+  const listener = main.indexOf('browserSession.on("will-download"');
+  const dialogCall = main.indexOf("await dialog.showSaveDialog", listener);
+  const doneListener = main.indexOf('item.once("done"', listener);
+  assert.ok(listener >= 0 && doneListener > listener && dialogCall > doneListener);
+});
