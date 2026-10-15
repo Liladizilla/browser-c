@@ -137,7 +137,14 @@ async function navigate(rawInput, tabId = activeTabId) {
   const destination = resolveAddress(rawInput);
   if (!isWebUrl(destination)) throw new TypeError("Only HTTP and HTTPS destinations are allowed.");
   tab.url = destination; tab.loading = true; tab.error = ""; sendState();
-  await tab.view.webContents.loadURL(destination);
+  try {
+    await tab.view.webContents.loadURL(destination);
+  } catch (error) {
+    tab.loading = false;
+    tab.error = error instanceof Error ? error.message : "The page could not be loaded.";
+    if (tab.id === activeTabId) sendState();
+    throw error;
+  }
   scheduleSessionSave();
   return destination;
 }
