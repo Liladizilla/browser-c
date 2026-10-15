@@ -868,7 +868,7 @@ ipcMain.handle("browser:page:save-pdf", async (event) => {
   if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted PDF request." };
   const tab = activeTab();
   if (!tab || !isWebUrl(tab.url)) return { ok: false, error: "There is no web page to export." };
-  const safeTitle = String(tab.title || "webpage").replace(/[\\/:*?"<>|\\u0000-\\u001f]/g, "_").slice(0, 100) || "webpage";
+  const safeTitle = String(tab.title || "webpage").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 100) || "webpage";
   const result = await dialog.showSaveDialog(windowRef, {
     title: "Save page as PDF",
     defaultPath: path.join(app.getPath("downloads"), safeTitle + ".pdf"),
@@ -887,7 +887,7 @@ ipcMain.handle("browser:page:capture", async (event) => {
   if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted screenshot request." };
   const tab = activeTab();
   if (!tab || !isWebUrl(tab.url)) return { ok: false, error: "There is no web page to capture." };
-  const safeTitle = String(tab.title || "screenshot").replace(/[\\/:*?"<>|\\u0000-\\u001f]/g, "_").slice(0, 100) || "screenshot";
+  const safeTitle = String(tab.title || "screenshot").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 100) || "screenshot";
   const result = await dialog.showSaveDialog(windowRef, {
     title: "Capture page screenshot",
     defaultPath: path.join(app.getPath("pictures"), safeTitle + ".png"),
