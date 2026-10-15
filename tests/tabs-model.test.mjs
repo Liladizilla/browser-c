@@ -49,3 +49,12 @@ test("bookmarks and history use narrow IPC endpoints and persistent profile stor
   assert.match(preload, /getHistory/);
   assert.match(preload, /clearHistory/);
 });
+
+test("history records only web URLs and remains bounded", () => {
+  assert.match(main, /if \(!isWebUrl\(tab\.url\)\) return/);
+  assert.match(main, /MAX_HISTORY_ITEMS/);
+  assert.match(main, /recordHistory\(tab\)/);
+});
+test("content view layout accounts for the expanded browser toolbar", () => {
+  assert.match(main, /CHROME_HEIGHT = 148/);
+});
