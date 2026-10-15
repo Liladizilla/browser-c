@@ -15,6 +15,11 @@
       <div id="tabs" class="tabs" role="tablist" aria-label="Open tabs"></div>
       <button id="new-tab" class="new-tab" title="New tab (Ctrl+T)" aria-label="New tab">+</button>
       <button id="new-private-tab" class="new-private-tab" title="New private tab (Ctrl+Shift+N)" aria-label="New private tab">Private</button>
+      <div class="window-controls" aria-label="Window controls">
+        <button id="window-minimize" title="Minimize window" aria-label="Minimize window">−</button>
+        <button id="window-maximize" title="Maximize window" aria-label="Maximize window">□</button>
+        <button id="window-close" class="window-close" title="Close window" aria-label="Close window">×</button>
+      </div>
     </div>
     <div class="controls">
       <button id="back" title="Back" aria-label="Back" disabled>←</button>
@@ -45,6 +50,14 @@
         <option value="brave">Brave Search</option>
       </select>
       <button id="clear-site-permissions" title="This site has no temporary permissions" disabled>Site access</button>
+      <details class="tools-menu">
+        <summary aria-label="Page tools">Tools</summary>
+        <div class="tools-menu-panel" role="group" aria-label="Page tools">
+          <button id="print-page" type="button">Print page…</button>
+          <button id="save-page-as" type="button">Save page as…</button>
+          <button id="open-devtools" type="button">Developer tools</button>
+        </div>
+      </details>
     </div>
     <div id="find-bar" class="find-bar" hidden role="search" aria-label="Find in page">
       <input id="find-query" type="search" aria-label="Find in page" placeholder="Find in page" maxlength="500">
