@@ -51,6 +51,8 @@ test("Electron smoke waits for the UI smoke suite instead of sampling too early"
   assert.ok(smoke.includes("startupWindowMs = 45_000"));
   assert.ok(smoke.includes("clearTimeout(timeoutHandle)"));
   assert.ok(!smoke.includes("setInterval("));
+  assert.ok(smoke.includes("BROWSER_C_OFFLINE_RECOVERY_PASS"));
+  assert.ok(smoke.includes("BROWSER_C_RENDERER_CRASH_RECOVERY_PASS"));
 });
 
 test("release staging excludes unpacked build output and rejects empty packages", () => {
