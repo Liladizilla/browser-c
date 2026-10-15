@@ -25,7 +25,9 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 
 ## Phase 3 — Daily-use browser features
 
-- [ ] Tabs, lifecycle, keyboard shortcuts, and session restore.
+- [x] Multiple tabs with create, switch, and close behavior.
+- [x] Keyboard shortcuts for new tab, close tab, focus address, reload, and cycle tabs.
+- [x] Versioned session restore for up to ten web tabs.
 - [ ] Bookmarks, history, search-provider settings, and clear-history controls.
 - [ ] Downloads UI, destination handling, cancellation, and safe-file handling.
 - [ ] Permission prompts for camera, microphone, geolocation, notifications, and other exposed APIs.
