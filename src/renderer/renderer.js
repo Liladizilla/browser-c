@@ -27,6 +27,7 @@ const zoomOut = document.querySelector("#zoom-out");
 const zoomReset = document.querySelector("#zoom-reset");
 const zoomIn = document.querySelector("#zoom-in");
 let libraryMode = "bookmarks";
+let libraryTrigger = null;
 let downloadState = [];
 let currentState = { tabs: [], activeTabId: null };
 
@@ -126,8 +127,9 @@ findQuery.addEventListener("keydown", (event) => {
 findPrevious.addEventListener("click", () => searchInPage("previous"));
 findNext.addEventListener("click", () => searchInPage(true));
 findClose.addEventListener("click", () => { findBar.hidden = true; api.stopFind(); });
-async function showLibrary(mode) {
+async function showLibrary(mode, trigger = null) {
   libraryMode = mode;
+  if (trigger) libraryTrigger = trigger;
   libraryPanel.hidden = false;
   libraryTitle.textContent = mode === "bookmarks" ? "Bookmarks" : mode === "history" ? "History" : "Downloads";
   clearHistory.hidden = mode !== "history";
@@ -200,9 +202,9 @@ bookmarkCurrent.addEventListener("click", async () => {
     if (!libraryPanel.hidden && libraryMode === "bookmarks") await showLibrary("bookmarks");
   } else status.textContent = result?.error || "Could not update bookmark";
 });
-showBookmarks.addEventListener("click", () => showLibrary("bookmarks"));
-showHistory.addEventListener("click", () => showLibrary("history"));
-showDownloads.addEventListener("click", () => showLibrary("downloads"));
+showBookmarks.addEventListener("click", () => showLibrary("bookmarks", showBookmarks));
+showHistory.addEventListener("click", () => showLibrary("history", showHistory));
+showDownloads.addEventListener("click", () => showLibrary("downloads", showDownloads));
 function formatBytes(bytes = 0) {
   if (bytes < 1024) return bytes + " B";
   const units = ["KB", "MB", "GB", "TB"];
@@ -215,7 +217,11 @@ api.onDownloads((items) => {
   if (!libraryPanel.hidden && libraryMode === "downloads") showLibrary("downloads");
 });
 api.getDownloads().then((items) => { downloadState = items; }).catch(() => {});
-closeLibrary.addEventListener("click", () => { libraryPanel.hidden = true; });
+function closeLibraryPanel() {
+  libraryPanel.hidden = true;
+  libraryTrigger?.focus();
+}
+closeLibrary.addEventListener("click", closeLibraryPanel);
 clearHistory.addEventListener("click", async () => {
   await api.clearHistory();
   await showLibrary("history");
@@ -224,6 +230,17 @@ clearHistory.addEventListener("click", async () => {
 api.onFocusAddress(() => { address.focus(); address.select(); });
 api.onFindOpen(openFindBar);
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !findBar.hidden) {
+    event.preventDefault();
+    findBar.hidden = true;
+    api.stopFind();
+    return;
+  }
+  if (event.key === "Escape" && !libraryPanel.hidden) {
+    event.preventDefault();
+    closeLibraryPanel();
+    return;
+  }
   const modifier = event.ctrlKey || event.metaKey;
   if (!modifier) return;
   const key = event.key.toLowerCase();
@@ -232,6 +249,8 @@ document.addEventListener("keydown", (event) => {
   else if (key === "w") { event.preventDefault(); api.closeTab(currentState.activeTabId); }
   else if (key === "l") { event.preventDefault(); address.focus(); address.select(); }
   else if (key === "f") { event.preventDefault(); openFindBar(); }
+  else if (key === "j") { event.preventDefault(); showLibrary("downloads", showDownloads); }
+  else if (key === "h") { event.preventDefault(); showLibrary("history", showHistory); }
   else if (key === "+" || key === "=") { event.preventDefault(); api.changeZoom("in"); }
   else if (key === "-") { event.preventDefault(); api.changeZoom("out"); }
   else if (key === "0") { event.preventDefault(); api.changeZoom("reset"); }
