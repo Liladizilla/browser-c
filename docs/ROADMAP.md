@@ -1,24 +1,27 @@
 # Browser C Roadmap
 
-Milestones describe work to do, not features that already exist.
+Milestones describe work to do, not features that already exist. Checkboxes reflect repository work, not unverified runtime claims.
 
 ## Phase 1 — Repository and engineering foundation
 
 - [x] Create public repository and MIT license.
 - [x] Document architecture, security boundaries, platform plan, and roadmap.
-- [ ] Add CI and repository validation.
-- [ ] Add contribution and vulnerability-reporting guidance.
-- [ ] Review initial dependency and packaging choices.
+- [x] Add CI and repository validation.
+- [x] Add contribution and vulnerability-reporting guidance.
+- [x] Pin the initial Electron runtime version and document packaging direction.
 
 ## Phase 2 — Minimal desktop shell
 
-- [ ] Add pinned Electron + TypeScript application scaffold.
-- [ ] Build browser window with address/search, back, forward, reload, and stop.
-- [ ] Render websites in isolated, sandboxed Chromium content surfaces.
-- [ ] Add navigation policy, external-link handling, and safe IPC boundaries.
-- [ ] Add smoke tests for a local page and controlled HTTPS page.
+- [x] Add pinned Electron application scaffold.
+- [x] Build browser window with address/search, back, forward, reload, stop, and home controls.
+- [x] Render websites in isolated, sandboxed Chromium content surfaces.
+- [x] Add HTTP/HTTPS navigation policy and narrow IPC boundaries.
+- [x] Add automated address-resolution and security-policy regression tests.
+- [ ] Run application smoke tests on Linux, Windows, and macOS.
+- [ ] Test a local page and controlled HTTPS page on each target OS.
+- [ ] Add lockfile-based reproducible dependency installation.
 
-**Exit gate:** app launches and navigates on Linux, Windows, and macOS; untrusted content cannot access Node.js or privileged browser APIs.
+**Exit gate:** app launches and navigates on Linux, Windows, and macOS; untrusted content cannot access Node.js or privileged browser APIs. CI and unit tests alone do not satisfy this gate.
 
 ## Phase 3 — Daily-use browser features
 

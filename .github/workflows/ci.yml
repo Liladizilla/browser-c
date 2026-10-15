@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  foundation:
-    name: Foundation checks (${{ matrix.os }})
+  browser-shell:
+    name: Browser shell checks (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -27,8 +27,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-      - name: Validate repository foundation
+          node-version: 24
+      - name: Install pinned application dependencies
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Validate repository
         run: npm run validate
-      - name: Run tests
+      - name: Check application JavaScript syntax
+        run: npm run check
+      - name: Run navigation tests
         run: npm test

@@ -11,10 +11,10 @@
 ## Initial technology direction
 
 - **Runtime and shell:** Electron, pinned to a supported release.
-- **Language:** TypeScript.
+- **Language:** JavaScript ES modules for the initial prototype; TypeScript migration is a later engineering decision.
 - **Engine:** Chromium as distributed with Electron.
 - **UI:** trusted application window for browser chrome; visited sites in isolated `WebContentsView` or equivalent supported surfaces, never in the privileged UI renderer.
-- **Testing:** Node test runner for pure logic; Electron end-to-end tests once the application scaffold exists.
+- **Testing:** Node test runner for pure logic; Node tests cover navigation and security defaults; Electron end-to-end tests remain to be added.
 - **CI:** GitHub Actions on Linux, Windows, and macOS for checks and later packaged builds.
 
 This is the proposed direction, not a guarantee that Electron exposes every feature of a full Chromium distribution.
@@ -77,8 +77,8 @@ browser-c/
 ├── docs/ARCHITECTURE.md
 ├── docs/ROADMAP.md
 ├── scripts/validate-repo.mjs
-├── src/                  # application source, added in implementation phase
-├── tests/                # tests added with source
+├── src/                  # Electron main process, preload, navigation and chrome UI
+├── tests/                # navigation and security regression tests
 ├── package.json
 ├── SECURITY.md
 ├── CONTRIBUTING.md
