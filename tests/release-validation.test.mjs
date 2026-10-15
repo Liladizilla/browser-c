@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
-const validator = fileURLToPath(new URL("../scripts/validate-release.mjs", import.meta.url));
+const validator = fileURLToPath(new URL("../scripts/validate-release.mjs", import.meta.url));\nconst collector = fileURLToPath(new URL("../scripts/collect-release-artifacts.mjs", import.meta.url));
 
 async function runValidator(platform, artifactNames, manifestFactory) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "browser-c-release-validation-"));
@@ -66,4 +66,43 @@ test("release validator rejects artifacts omitted from the checksum manifest", a
     `${hashes.get("Browser-C.dmg")}  Browser-C.dmg\n`);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Checksum manifest must cover every artifact exactly once/);
+});
+
+test("release validator rejects unsafe artifact filenames", async () => {
+  const result = await runValidator("windows", ["Browser-C\\\\unsafe.exe"]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Unsafe artifact filename/);
+});
+
+test("release collector stages package formats and excludes build intermediates", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "browser-c-release-collector-"));
+  try {
+    await writeFile(path.join(directory, "Browser-C.AppImage"), "appimage");
+    await writeFile(path.join(directory, "Browser-C.deb"), "deb");
+    await writeFile(path.join(directory, "builder-debug.yml"), "intermediate");
+    await mkdir(path.join(directory, "linux-unpacked"));
+    await writeFile(path.join(directory, "linux-unpacked", "browser"), "not a package artifact");
+    const result = spawnSync(process.execPath, [collector, "linux", directory], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const staged = await readdir(path.join(directory, "artifacts"));
+    assert.deepEqual(staged.sort(), ["Browser-C.AppImage", "Browser-C.deb"]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("release collector clears stale staged files before copying current packages", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "browser-c-release-collector-"));
+  try {
+    await writeFile(path.join(directory, "Browser-C.AppImage"), "appimage");
+    await writeFile(path.join(directory, "Browser-C.deb"), "deb");
+    await mkdir(path.join(directory, "artifacts"));
+    await writeFile(path.join(directory, "artifacts", "stale.exe"), "stale");
+    const result = spawnSync(process.execPath, [collector, "linux", directory], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const staged = await readdir(path.join(directory, "artifacts"));
+    assert.deepEqual(staged.sort(), ["Browser-C.AppImage", "Browser-C.deb"]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
