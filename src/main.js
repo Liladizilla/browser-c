@@ -522,13 +522,24 @@ function createWindow() {
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "first page");
           await navigate(fixtureOrigin + "/two", fixtureTab.id);
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "second page");
-          const previousOneCount = fixtureHits.get("/one") || 0;
-          fixtureTab.view.webContents.navigationHistory.goBack();
-          await waitForFixture(() => (fixtureHits.get("/one") || 0) > previousOneCount, "back request");
+          const waitForNavigationEvent = (targetPath, trigger) => new Promise((resolve, reject) => {
+            const contents = fixtureTab.view.webContents;
+            const timer = setTimeout(() => {
+              contents.removeListener("did-navigate", onNavigate);
+              reject(new Error("Timed out waiting for navigation event: " + targetPath));
+            }, 4000);
+            const onNavigate = (_event, url) => {
+              if (!url.endsWith(targetPath)) return;
+              clearTimeout(timer);
+              contents.removeListener("did-navigate", onNavigate);
+              resolve();
+            };
+            contents.on("did-navigate", onNavigate);
+            trigger();
+          });
+          await waitForNavigationEvent("/one", () => fixtureTab.view.webContents.navigationHistory.goBack());
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "back navigation");
-          const previousTwoCount = fixtureHits.get("/two") || 0;
-          fixtureTab.view.webContents.navigationHistory.goForward();
-          await waitForFixture(() => (fixtureHits.get("/two") || 0) > previousTwoCount, "forward request");
+          await waitForNavigationEvent("/two", () => fixtureTab.view.webContents.navigationHistory.goForward());
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "forward navigation");
           const backForwardWorks = fixtureTab.view.webContents.getURL().endsWith("/two")
             && (fixtureHits.get("/one") || 0) >= 2 && (fixtureHits.get("/two") || 0) >= 2;
