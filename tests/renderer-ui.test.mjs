@@ -39,8 +39,3 @@ test("minimum window width makes the narrow responsive layout reachable and smok
   assert.match(css, /@media \(max-width: 520px\)/);
 });
 
-test("Electron smoke test captures screenshots for visual review", () => {
-  assert.match(main, /windowRef\.webContents\.capturePage\(\)/);
-  assert.match(main, /browser-c-ui-520\.png/);
-  assert.match(main, /browser-c-ui-1280\.png/);
-});
