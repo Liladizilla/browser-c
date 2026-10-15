@@ -124,7 +124,8 @@ test("SBOM generation resolves the npm command on Windows runners", () => {
   assert.ok(sbomScript.includes('shell: process.platform === "win32"'));
 });
 
-test("cross-platform smoke deterministically checks background navigation error isolation", () => {
-  assert.ok(mainSource.includes('webContents.emit("did-fail-load", {}, -324, "ERR_EMPTY_RESPONSE"'));
+test("cross-platform smoke deterministically checks navigation error isolation", () => {
+  assert.ok(mainSource.includes('fixtureTab.view.webContents.emit("did-fail-load", {}, -324, "ERR_EMPTY_RESPONSE"'));
+  assert.ok(mainSource.includes('backgroundTab.view.webContents.emit("did-fail-load", {}, -324, "ERR_EMPTY_RESPONSE"'));
   assert.ok(mainSource.includes('Math.ceil(timeoutMs / 50)'));
 });
