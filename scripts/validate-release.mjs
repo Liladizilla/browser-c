@@ -18,12 +18,14 @@ const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.nam
 const sbomName = "SBOM.spdx.json";
 const artifacts = files.filter((name) => name !== "SHA256SUMS.txt" && name !== sbomName).sort();
 assert.ok(artifacts.length > 0, "Release directory contains no package artifacts");
+function safeFilename(name) {
+  return !name.includes("/") && !name.includes("\\")
+    && ![...name].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127);
+}
 for (const name of artifacts) {
   assert.ok(expectedExtensions[platform].some((extension) => name.toLowerCase().endsWith(extension.toLowerCase())),
     "Unexpected release artifact type: " + name + "; allowed extensions: " + expectedExtensions[platform].join(", "));
-}
-for (const name of artifacts) {
-  assert.ok(!/[\\u0000-\\u001f\\u007f/\\\\]/.test(name), "Unsafe artifact filename: " + JSON.stringify(name));
+  assert.ok(safeFilename(name), "Unsafe artifact filename: " + JSON.stringify(name));
   const details = await stat(path.join(directory, name));
   assert.ok(details.size > 0, "Package artifact is empty: " + name);
 }
@@ -39,14 +41,14 @@ assert.ok(Array.isArray(sbom.packages) && sbom.packages.length > 0, "SBOM must c
 
 const manifest = await readFile(path.join(directory, "SHA256SUMS.txt"), "utf8");
 const records = new Map();
-for (const line of manifest.split(/\\r?\\n/).filter(Boolean)) {
+for (const rawLine of manifest.split(String.fromCharCode(10)).filter((line) => line.trim())) {
+  const line = rawLine.replace(/\\r$/, "");
   const match = /^([a-f0-9]{64})  (.+)$/.exec(line);
   assert.ok(match, "Malformed checksum line: " + line);
-  assert.ok(!/[\\u0000-\\u001f\\u007f/\\\\]/.test(match[2]), "Unsafe checksum filename: " + JSON.stringify(match[2]));
+  assert.ok(safeFilename(match[2]), "Unsafe checksum filename: " + JSON.stringify(match[2]));
   assert.ok(!records.has(match[2]), "Duplicate checksum entry: " + match[2]);
   records.set(match[2], match[1]);
 }
-
 const checksummedFiles = [...artifacts, sbomName].sort();
 assert.deepEqual([...records.keys()].sort(), checksummedFiles,
   "Checksum manifest must cover every package and the SBOM exactly once");
