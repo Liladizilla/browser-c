@@ -49,6 +49,8 @@ jobs:
         run: npx --yes electron-builder@26.0.12 ${{ matrix.args }}
       - name: Generate SHA-256 checksums
         run: npm run checksums
+      - name: Validate package formats and checksums
+        run: node scripts/validate-release.mjs ${{ matrix.platform }}
 
       - name: Upload package artifacts
         uses: actions/upload-artifact@v6
