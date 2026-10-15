@@ -9,6 +9,7 @@ const newTab = document.querySelector("#new-tab");
 const newPrivateTab = document.querySelector("#new-private-tab");
 const tabsNode = document.querySelector("#tabs");
 const status = document.querySelector("#status");
+const retryNavigation = document.querySelector("#retry-navigation");
 const bookmarkCurrent = document.querySelector("#bookmark-current");
 const showBookmarks = document.querySelector("#show-bookmarks");
 const showHistory = document.querySelector("#show-history");
@@ -85,6 +86,8 @@ function applyState(state = {}) {
   reload.title = state.loading ? "Stop loading" : "Reload";
   reload.setAttribute("aria-label", reload.title);
   status.textContent = (state.isPrivate ? "Private session · history and tabs are not saved · " : "") + (state.error ? "Load error: " + state.error : state.loading ? "Loading…" : state.title || "Ready");
+  retryNavigation.hidden = !state.error;
+  retryNavigation.disabled = Boolean(state.loading);
   bookmarkCurrent.disabled = Boolean(state.isPrivate);
   bookmarkCurrent.title = state.isPrivate ? "Bookmarks are disabled in private tabs" : "Bookmark current page";
   document.body.classList.toggle("private-mode", Boolean(state.isPrivate));
@@ -99,11 +102,16 @@ function applyState(state = {}) {
   zoomReset.title = "Reset zoom (Ctrl+0)";
   document.title = state.title ? state.title + " · Browser C" : "Browser C";
 }
-form.addEventListener("submit", async (event) => {
+async function submitAddress(event) {
   event.preventDefault();
   const result = await api.navigate(address.value);
   if (!result || !result.ok) status.textContent = result?.error || "Navigation failed";
   else { address.value = result.url; address.blur(); }
+}
+form.addEventListener("submit", submitAddress);
+retryNavigation.addEventListener("click", () => {
+  address.value = currentState.url || address.value;
+  submitAddress({ preventDefault() {} });
 });
 back.addEventListener("click", () => api.back());
 forward.addEventListener("click", () => api.forward());

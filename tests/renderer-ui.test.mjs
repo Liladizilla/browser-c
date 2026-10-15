@@ -88,3 +88,13 @@ test("navigation errors are stored per tab and cleared on a new or successful na
 test("stopping a navigation clears the loading state", () => {
   assert.match(main, /contents\.on\("did-stop-loading", \(\) => \{[\s\S]*?tab\.loading = false;[\s\S]*?sendState\(\);[\s\S]*?\}\);/);
 });
+
+
+test("failed navigation exposes an accessible retry action and hides it after recovery", () => {
+  assert.match(html, /id="retry-navigation"[^>]*type="button" hidden>Retry<\/button>/);
+  assert.match(renderer, /retryNavigation\.hidden = !state\.error/);
+  assert.match(renderer, /retryNavigation\.disabled = Boolean\(state\.loading\)/);
+  assert.match(renderer, /retryNavigation\.addEventListener\("click"/);
+  assert.match(css, /\.retry-navigation\[hidden\] \{ display: none; \}/);
+  assert.match(renderer, /async function submitAddress\(event\)/);
+});
