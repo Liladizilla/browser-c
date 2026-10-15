@@ -502,6 +502,11 @@ function createWindow() {
         const fixtureServer = createServer((request, response) => {
           const route = new URL(request.url || "/", "http://127.0.0.1").pathname;
           fixtureHits.set(route, (fixtureHits.get(route) || 0) + 1);
+          if (route === "/redirect-chain") {
+            response.writeHead(302, { location: "/redirect" });
+            response.end();
+            return;
+          }
           if (route === "/redirect") {
             response.writeHead(302, { location: "/redirected" });
             response.end();
@@ -606,6 +611,13 @@ function createWindow() {
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "second page after redirect");
           const redirectIntegration = { redirectFollowed, finalUrl: fixtureTab.view.webContents.getURL() };
           if (!redirectIntegration.redirectFollowed) throw new Error("Redirect integration assertion failed: " + JSON.stringify(redirectIntegration));
+          await navigate(fixtureOrigin + "/redirect-chain", fixtureTab.id);
+          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/redirected") && !fixtureTab.loading,
+            "multi-hop redirect destination");
+          redirectIntegration.multiHopRedirectFollowed = fixtureTab.view.webContents.getURL().endsWith("/redirected");
+          if (!redirectIntegration.multiHopRedirectFollowed) {
+            throw new Error("Multi-hop redirect assertion failed: " + JSON.stringify(redirectIntegration));
+          }
           console.log("BROWSER_C_REDIRECT_SMOKE_PASS " + JSON.stringify(redirectIntegration));
           const privateFixtureSnapshot = createTab(fixtureOrigin + "/private-secret", true);
           const privateFixtureTab = tabs.find((tab) => tab.id === privateFixtureSnapshot.id);
@@ -637,12 +649,14 @@ function createWindow() {
             throw new Error("Private session isolation assertions failed: " + JSON.stringify(privateSessionIsolation));
           }
           closeTab(privateFixtureTab.id);
-          await waitForFixture(async () => !(await privateSession.cookies.get({ url: fixtureOrigin }))
-            .some((cookie) => cookie.name === "private-only"), "private cookies cleared after tab close");
+          let privateCookiesAfterClose = await privateSession.cookies.get({ url: fixtureOrigin });
+          for (let attempt = 0; attempt < 50 && privateCookiesAfterClose.some((cookie) => cookie.name === "private-only"); attempt++) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            privateCookiesAfterClose = await privateSession.cookies.get({ url: fixtureOrigin });
+          }
           const regularCookieSurvivesPrivateClose = (await regularSession.cookies.get({ url: fixtureOrigin }))
             .some((cookie) => cookie.name === "regular-only" && cookie.value === "regular-secret");
-          privateSessionIsolation.privateCookiesClearedOnClose = !(await privateSession.cookies.get({ url: fixtureOrigin }))
-            .some((cookie) => cookie.name === "private-only");
+          privateSessionIsolation.privateCookiesClearedOnClose = !privateCookiesAfterClose.some((cookie) => cookie.name === "private-only");
           privateSessionIsolation.regularCookieSurvivesPrivateClose = regularCookieSurvivesPrivateClose;
           if (!privateSessionIsolation.privateCookiesClearedOnClose || !regularCookieSurvivesPrivateClose) {
             throw new Error("Private-session cleanup assertions failed: " + JSON.stringify(privateSessionIsolation));
