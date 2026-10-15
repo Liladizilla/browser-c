@@ -26,6 +26,16 @@ const showDownloads = document.querySelector("#show-downloads");
 const clearSitePermissions = document.querySelector("#clear-site-permissions");
 const searchProviderSelect = document.querySelector("#search-provider");
 const openSettings = document.querySelector("#open-settings");
+const openPasswords = document.querySelector("#open-passwords");
+const passwordPanel = document.querySelector("#password-panel");
+const closePasswords = document.querySelector("#close-passwords");
+const passwordForm = document.querySelector("#password-form");
+const passwordSite = document.querySelector("#password-site");
+const passwordUsername = document.querySelector("#password-username");
+const passwordSecret = document.querySelector("#password-secret");
+const passwordList = document.querySelector("#password-list");
+const passwordVaultNote = document.querySelector("#password-vault-note");
+let lastPasswordTrigger = null;
 const settingsPanel = document.querySelector("#settings-panel");
 const closeSettings = document.querySelector("#close-settings");
 const settingsForm = document.querySelector("#settings-form");
@@ -287,6 +297,92 @@ bookmarkCurrent.addEventListener("click", async () => {
 showBookmarks.addEventListener("click", () => showLibrary("bookmarks", showBookmarks));
 showHistory.addEventListener("click", () => showLibrary("history", showHistory));
 showDownloads.addEventListener("click", () => showLibrary("downloads", showDownloads));
+function closePasswordPanel() {
+  passwordPanel.hidden = true;
+  openPasswords.setAttribute("aria-expanded", "false");
+  passwordSecret.value = "";
+  passwordList.replaceChildren();
+  lastPasswordTrigger?.focus();
+}
+async function renderPasswordVault() {
+  passwordList.replaceChildren();
+  const result = await api.getPasswords();
+  if (!result?.available) {
+    passwordVaultNote.textContent = result?.error || "Secure OS-backed encryption is unavailable. Browser C will not store passwords in plaintext. Enable a system keyring and restart the browser.";
+    return;
+  }
+  passwordVaultNote.textContent = "Saved locally using OS-backed encryption. Manual entries only; automatic saving and autofill are not implemented yet.";
+  const entries = Array.isArray(result.entries) ? result.entries : [];
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "library-empty";
+    empty.textContent = "No saved passwords yet.";
+    passwordList.append(empty);
+    return;
+  }
+  for (const entry of entries) {
+    const row = document.createElement("div");
+    row.className = "library-entry password-entry";
+    const detail = document.createElement("div");
+    detail.className = "download-detail";
+    const origin = document.createElement("strong");
+    origin.textContent = entry.origin;
+    const username = document.createElement("small");
+    username.textContent = entry.username;
+    const secret = document.createElement("input");
+    secret.type = "password";
+    secret.readOnly = true;
+    secret.autocomplete = "off";
+    secret.setAttribute("aria-label", "Saved password for " + entry.origin);
+    secret.placeholder = "••••••••";
+    detail.append(origin, username, secret);
+    const reveal = document.createElement("button");
+    reveal.type = "button";
+    reveal.textContent = "Reveal";
+    reveal.addEventListener("click", async () => {
+      if (secret.type === "text") {
+        secret.value = "";
+        secret.type = "password";
+        reveal.textContent = "Reveal";
+        return;
+      }
+      const revealed = await api.revealPassword(entry.id);
+      if (!revealed?.ok) { status.textContent = revealed?.error || "Could not reveal password."; return; }
+      secret.value = revealed.password;
+      secret.type = "text";
+      reveal.textContent = "Hide";
+    });
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "Delete";
+    remove.addEventListener("click", async () => {
+      const deleted = await api.deletePassword(entry.id);
+      if (deleted?.ok) { status.textContent = "Password entry deleted."; await renderPasswordVault(); }
+      else status.textContent = deleted?.error || "Could not delete password entry.";
+    });
+    row.append(detail, reveal, remove);
+    passwordList.append(row);
+  }
+}
+openPasswords.addEventListener("click", async () => {
+  lastPasswordTrigger = openPasswords;
+  settingsPanel.hidden = true;
+  libraryPanel.hidden = true;
+  passwordPanel.hidden = false;
+  openPasswords.setAttribute("aria-expanded", "true");
+  passwordSite.value = /^https:\/\//i.test(currentState.url || "") ? currentState.url : "";
+  await renderPasswordVault();
+  closePasswords.focus();
+});
+closePasswords.addEventListener("click", closePasswordPanel);
+passwordForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const result = await api.savePassword({ url: passwordSite.value.trim(), username: passwordUsername.value.trim(), password: passwordSecret.value });
+  if (!result?.ok) { status.textContent = result?.error || "Could not save password."; return; }
+  passwordSecret.value = "";
+  status.textContent = "Password saved securely.";
+  await renderPasswordVault();
+});
 function applyTheme(theme) {
   if (document.documentElement) document.documentElement.dataset.theme = ["dark", "light", "system"].includes(theme) ? theme : "dark";
 }
@@ -365,6 +461,7 @@ function handleEscape(event) {
     api.stopFind();
     return;
   }
+  if (passwordPanel && !passwordPanel.hidden) { event.preventDefault(); closePasswordPanel(); return; }
   if (settingsPanel && !settingsPanel.hidden) { event.preventDefault(); closeSettingsPanel(); return; }
   if (!libraryPanel.hidden) {
     event.preventDefault();
