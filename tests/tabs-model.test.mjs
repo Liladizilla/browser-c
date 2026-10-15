@@ -39,3 +39,13 @@ test("session restoration preserves the selected tab index", () => {
   assert.match(main, /activeIndex/);
   assert.match(main, /activateTab\(tabs\[Math\.min\(session\.activeIndex/);
 });
+
+test("bookmarks and history use narrow IPC endpoints and persistent profile storage", () => {
+  assert.match(main, /profile\.json/);
+  assert.match(main, /MAX_HISTORY_ITEMS/);
+  assert.match(main, /browser:bookmarks:toggle/);
+  assert.match(main, /browser:history:clear/);
+  assert.match(preload, /getBookmarks/);
+  assert.match(preload, /getHistory/);
+  assert.match(preload, /clearHistory/);
+});
