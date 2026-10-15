@@ -1,6 +1,7 @@
 import { app, BrowserWindow, WebContentsView, ipcMain, dialog, shell } from "electron";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { createServer } from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { isWebUrl, resolveAddress } from "./navigation.js";
@@ -283,6 +284,10 @@ function attachTabEvents(tab) {
   contents.on("did-navigate-in-page", (_event, url) => { tab.url = url; sendState(); scheduleSessionSave(); });
   contents.on("did-finish-load", () => {
     tab.url = contents.getURL(); tab.title = contents.getTitle() || "New Tab"; tab.loading = false; sendState({ error: "" });
+  });
+  contents.on("did-stop-loading", () => {
+    tab.loading = false;
+    sendState();
   });
   contents.on("did-fail-load", (_event, code, description, validatedURL, isMainFrame) => {
     if (isMainFrame && code !== -3) {
