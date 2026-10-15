@@ -268,7 +268,7 @@ function attachTabEvents(tab) {
   contents.on("will-redirect", (event, url) => { if (!isWebUrl(url)) event.preventDefault(); });
   contents.on("did-start-navigation", (_event, url, _inPlace, isMainFrame) => {
     if (isMainFrame && isWebUrl(url)) tab.url = url;
-    tab.loading = true; tab.error = ""; sendState();
+    tab.loading = true; tab.error = ""; sendState({ error: "" });
   });
   contents.on("page-title-updated", (_event, title) => {
     tab.title = title || "New Tab";
@@ -560,7 +560,14 @@ function createWindow() {
           await navigate(fixtureOrigin + "/redirect", fixtureTab.id);
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "redirect destination");
           const redirectWorks = fixtureTab.view.webContents.getURL().endsWith("/one");
-          await navigate("http://127.0.0.1:1/unreachable", fixtureTab.id).catch(() => {});
+          const refusedServer = createServer();
+          await new Promise((resolve, reject) => {
+            refusedServer.once("error", reject);
+            refusedServer.listen(0, "127.0.0.1", resolve);
+          });
+          const refusedPort = refusedServer.address().port;
+          await new Promise((resolve) => refusedServer.close(resolve));
+          await navigate("http://127.0.0.1:" + refusedPort + "/unreachable", fixtureTab.id).catch(() => {});
           await waitForFixture(() => Boolean(fixtureTab.error) && !fixtureTab.loading, "failed navigation error state");
           const failureFeedback = await windowRef.webContents.executeJavaScript("(() => ({ statusShowsError: document.getElementById('status').textContent.includes('Load error:'), retryVisible: !document.getElementById('retry-navigation').hidden, retryEnabled: !document.getElementById('retry-navigation').disabled }))()");
           const retryStarted = new Promise((resolve) => fixtureTab.view.webContents.once("did-start-navigation", resolve));
