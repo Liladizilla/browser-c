@@ -267,7 +267,7 @@ showBookmarks.addEventListener("click", () => showLibrary("bookmarks", showBookm
 showHistory.addEventListener("click", () => showLibrary("history", showHistory));
 showDownloads.addEventListener("click", () => showLibrary("downloads", showDownloads));
 function applyTheme(theme) {
-  document.documentElement.dataset.theme = ["dark", "light", "system"].includes(theme) ? theme : "dark";
+  if (document.documentElement) document.documentElement.dataset.theme = ["dark", "light", "system"].includes(theme) ? theme : "dark";
 }
 function closeSettingsPanel() {
   settingsPanel.hidden = true;
@@ -344,7 +344,7 @@ function handleEscape(event) {
     api.stopFind();
     return;
   }
-  if (!settingsPanel.hidden) { event.preventDefault(); closeSettingsPanel(); return; }
+  if (settingsPanel && !settingsPanel.hidden) { event.preventDefault(); closeSettingsPanel(); return; }
   if (!libraryPanel.hidden) {
     event.preventDefault();
     closeLibraryPanel();
