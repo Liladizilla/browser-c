@@ -34,7 +34,10 @@ test("secret scanning has read-only repository permissions", () => {
 test("desktop packages are validated before artifact provenance is attested", () => {
   assert.ok(packages.includes("npm audit --audit-level=high"));
   assert.ok(packages.includes("node scripts/collect-release-artifacts.mjs ${{ matrix.platform }}"));
-  assert.ok(packages.includes("node scripts/validate-release.mjs ${{ matrix.platform }} release/artifacts"));\n  assert.ok(packages.includes("npm run checksums -- release/artifacts"));\n  assert.ok(packages.includes("path: release/artifacts/*"));\n  assert.ok(packages.includes("node scripts/validate-release.mjs ${{ matrix.platform }}"));
+  assert.ok(packages.includes("node scripts/validate-release.mjs ${{ matrix.platform }} release/artifacts"));
+  assert.ok(packages.includes("npm run checksums -- release/artifacts"));
+  assert.ok(packages.includes("path: release/artifacts/*"));
+  assert.ok(packages.includes("node scripts/validate-release.mjs ${{ matrix.platform }}"));
   assert.ok(packages.includes("uses: actions/attest-build-provenance@v3"));
   assert.ok(packages.includes("subject-path:"));
   assert.ok(packages.includes("id-token: write"));
