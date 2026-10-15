@@ -67,3 +67,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid #d6a64c; outline-
 .new-private-tab { flex: 0 0 auto; width: auto; height: 27px; padding: 0 8px; border: 1px solid #55505f; background: #25212b; color: #d7c9ef; font-size: 10px; }
 body.private-mode .toolbar { border-bottom-color: #8e70bd; }
 body.private-mode .security-mark { color: #b69be0; }
+
+/* Keep the added search preference inside the fixed-height toolbar at narrow widths. */
+@media (max-width: 760px) {
+  .library-controls { padding-left: 0; gap: 4px; }
+  .library-controls button { padding-inline: 7px; }
+  #search-provider { flex: 0 1 92px; width: 92px; min-width: 70px; }
+}
+@media (max-width: 520px) {
+  .library-controls { gap: 3px; }
+  .library-controls button { font-size: 10px; padding-inline: 5px; }
+  .search-provider-label { display: none; }
+  #search-provider { flex: 0 1 76px; width: 76px; min-width: 64px; }
+}
