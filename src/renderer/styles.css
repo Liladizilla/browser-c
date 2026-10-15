@@ -52,3 +52,4 @@ button:focus-visible, input:focus-visible { outline: 2px solid #d6a64c; outline-
 .download-detail { flex: 1; min-width: 0; display: grid; gap: 4px; padding: 4px; overflow-wrap: anywhere; }
 .download-detail strong { font-size: 11px; font-weight: 600; }
 .download-detail small { color: #9aa2aa; font-size: 10px; }
+.library-entry > button[title^="Show downloaded"] { flex: 0 0 auto; width: auto; min-width: 48px; border: 1px solid #343a40; padding: 4px 8px; }
