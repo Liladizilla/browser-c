@@ -338,6 +338,13 @@ function attachTabEvents(tab) {
       if (tab.id === activeTabId) sendState({ error: tab.error, url: validatedURL });
     }
   });
+  contents.on("render-process-gone", (_event, details) => {
+    if (!tabs.some((item) => item.id === tab.id)) return;
+    tab.loading = false;
+    const reason = String(details?.reason || "unknown");
+    tab.error = "The page renderer stopped unexpectedly (" + reason + "). Reload this tab to recover.";
+    if (tab.id === activeTabId) sendState({ error: tab.error, url: tab.url });
+  });
   contents.on("before-input-event", (event, input) => {
     if (input.type !== "keyDown") return;
     if (input.key === "Escape") { windowRef?.webContents.send("browser:escape"); return; }
@@ -732,6 +739,50 @@ function createWindow() {
           }
           console.log("BROWSER_C_BACKGROUND_ERROR_ISOLATION_PASS " + JSON.stringify(backgroundErrorIsolation));
           closeTab(backgroundTab.id);
+
+          const offlineProbe = createServer();
+          await new Promise((resolve, reject) => {
+            offlineProbe.once("error", reject);
+            offlineProbe.listen(0, "127.0.0.1", resolve);
+          });
+          const offlineUrl = "http://127.0.0.1:" + offlineProbe.address().port + "/offline";
+          await new Promise((resolve) => offlineProbe.close(resolve));
+          await navigate(offlineUrl, fixtureTab.id).catch(() => {});
+          await waitForFixture(() => !fixtureTab.loading && Boolean(fixtureTab.error), "unreachable network destination");
+          const offlineFailureVisible = Boolean(fixtureTab.error);
+          await navigate(fixtureOrigin + "/recovered", fixtureTab.id);
+          await waitForFixture(() => fixtureTab.view.webContents.getTitle() === "recovered" && !fixtureTab.loading && !fixtureTab.error,
+            "recovery after unreachable network destination");
+          const offlineRecovery = { offlineFailureVisible, recoveryClearsError: !fixtureTab.error };
+          if (!offlineRecovery.offlineFailureVisible || !offlineRecovery.recoveryClearsError) {
+            throw new Error("Offline navigation recovery assertions failed: " + JSON.stringify(offlineRecovery));
+          }
+          console.log("BROWSER_C_OFFLINE_RECOVERY_PASS " + JSON.stringify(offlineRecovery));
+
+          const crashTabSnapshot = createTab(fixtureOrigin + "/two");
+          const crashTab = tabs.find((tab) => tab.id === crashTabSnapshot.id);
+          await waitForFixture(() => crashTab.view.webContents.getTitle() === "two" && !crashTab.loading, "renderer crash fixture");
+          activateTab(crashTab.id);
+          const rendererGone = new Promise((resolve) => {
+            crashTab.view.webContents.once("render-process-gone", (_event, details) => resolve(details));
+          });
+          crashTab.view.webContents.forcefullyCrashRenderer();
+          const crashDetails = await Promise.race([
+            rendererGone,
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Timed out waiting for renderer crash event")), 6000))
+          ]);
+          await waitForFixture(() => !crashTab.loading && /renderer stopped unexpectedly/.test(crashTab.error),
+            "renderer crash feedback");
+          const rendererCrashErrorVisible = Boolean(crashTab.error) && Boolean(crashDetails?.reason);
+          crashTab.view.webContents.reload();
+          await waitForFixture(() => crashTab.view.webContents.getTitle() === "two" && !crashTab.loading && !crashTab.error,
+            "reload after renderer crash");
+          const rendererCrashRecovery = { rendererCrashErrorVisible, reloadRecovers: !crashTab.error && crashTab.view.webContents.getTitle() === "two" };
+          if (!rendererCrashRecovery.rendererCrashErrorVisible || !rendererCrashRecovery.reloadRecovers) {
+            throw new Error("Renderer crash recovery assertions failed: " + JSON.stringify(rendererCrashRecovery));
+          }
+          console.log("BROWSER_C_RENDERER_CRASH_RECOVERY_PASS " + JSON.stringify(rendererCrashRecovery));
+          closeTab(crashTab.id);
         } finally {
           closeTab(fixtureTab.id);
           await new Promise((resolve) => fixtureServer.close(resolve));

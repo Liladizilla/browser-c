@@ -64,3 +64,9 @@ test("background navigation smoke uses a unique failed URL to avoid cached failu
   assert.match(main, /route === "\/fail" \|\| route === "\/fail-background"/);
   assert.match(main, /navigate\(fixtureOrigin \+ "\/fail-background", backgroundTab\.id\)/);
 });
+
+test("renderer process exits produce visible recovery feedback", () => {
+  assert.match(main, /contents\.on\("render-process-gone"/);
+  assert.match(main, /The page renderer stopped unexpectedly/);
+  assert.match(main, /Reload this tab to recover/);
+});
