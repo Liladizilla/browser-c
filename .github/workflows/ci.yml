@@ -51,3 +51,14 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Launch Electron under a virtual display
         run: xvfb-run -a npm run smoke
+        env:
+          BROWSER_C_SMOKE_SCREENSHOT_DIR: ${{ runner.temp }}/browser-c-ui
+
+      - name: Upload Electron UI screenshots for visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-c-ui-screenshots
+          path: ${{ runner.temp }}/browser-c-ui/*.png
+          if-no-files-found: warn
+          retention-days: 7
