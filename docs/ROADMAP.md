@@ -69,7 +69,7 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Add automated secret scanning of pull requests, pushes, and repository history.
 - [ ] Test clean install, upgrade, uninstall, profile retention, and rollback.
 - [x] Add a manual/tag-triggered cross-platform packaging workflow that uploads only staged, validated package files after tests and dependency audits pass.
-- [x] Add Windows/macOS package-smoke CI to build distributables, validate checksums/SBOMs, inspect artifacts, install and launch the Windows NSIS package, launch the macOS app bundle extracted from ZIP, and retain artifacts; macOS DMG installation and lifecycle testing remain open.
+- [x] Add Windows/macOS package-smoke CI to build distributables, validate checksums/SBOMs, inspect artifacts, install and launch the Windows NSIS package, launch the macOS app bundle from ZIP and from a mounted/copied DMG, and retain artifacts; upgrade/uninstall/profile-retention/rollback and manual device testing remain open.
 - [ ] Publish signed/notarized release artifacts; packaging workflow runs still need platform validation.
 
 ## Phase 6 — CharisOS feasibility and integration
