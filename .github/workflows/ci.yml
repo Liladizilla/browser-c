@@ -29,10 +29,25 @@ jobs:
         with:
           node-version: 24
       - name: Install pinned application dependencies
-        run: npm install --no-package-lock --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Validate repository
         run: npm run validate
       - name: Check application JavaScript syntax
         run: npm run check
       - name: Run navigation tests
         run: npm test
+
+  electron-startup-smoke:
+    name: Electron startup smoke test (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Launch Electron under a virtual display
+        run: xvfb-run -a npm run smoke
