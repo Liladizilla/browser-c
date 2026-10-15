@@ -59,3 +59,8 @@ test("navigation start and successful load clear stale navigation errors", () =>
   assert.match(main, /did-finish-load[\s\S]{0,180}sendState\(\{ error: "" \}\)/);
   assert.match(main, /did-fail-load[\s\S]{0,200}code !== -3/);
 });
+
+
+test("stopping a navigation clears the loading state", () => {
+  assert.match(main, /contents\.on\("did-stop-loading", \(\) => \{[\s\S]*?tab\.loading = false;[\s\S]*?sendState\(\);[\s\S]*?\}\);/);
+});
