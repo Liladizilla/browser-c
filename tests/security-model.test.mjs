@@ -6,6 +6,14 @@ const main = await readFile(new URL("../src/main.js", import.meta.url), "utf8");
 const preload = await readFile(new URL("../src/preload.cjs", import.meta.url), "utf8");
 const chrome = await readFile(new URL("../src/renderer/index.html", import.meta.url), "utf8");
 
+test("permissions are explicitly prompted and grants are session-scoped", () => {
+  assert.match(main, /requestPermission\(origin, permission\)/);
+  assert.match(main, /Allow for this session/);
+  assert.match(main, /permissionGrants/);
+  assert.match(main, /safeOrigin\(origin\)/);
+  assert.match(main, /callback\(false\)/);
+  assert.match(main, /PERMISSION_LABELS\[permission\]/);
+});
 test("remote page views use sandboxing and context isolation", () => {
   assert.match(main, /contextIsolation:\s*true/);
   assert.match(main, /nodeIntegration:\s*false/);

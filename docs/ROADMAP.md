@@ -32,8 +32,9 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Bookmarks, browsing history, persistent profile storage, and clear-history controls.
 - [ ] Search-provider settings.
 - [x] Download list, explicit save-location prompt, progress display, and cancellation.
-- [ ] Safe-file handling and completed-download actions.
-- [ ] Permission prompts for camera, microphone, geolocation, notifications, and other exposed APIs.
+- [x] Completed-download history persists (bounded) and can reveal a completed file in its folder.
+- [ ] Safe-file scanning and handling of potentially dangerous file types.
+- [x] Explicit session-scoped permission prompts for supported camera/microphone, geolocation, notifications, MIDI, clipboard-read, and pointer-lock requests; unsupported/insecure requests remain denied.
 - [x] Find in page with next/previous navigation and Ctrl/Cmd+F entry.
 - [x] Per-tab page zoom controls with keyboard shortcuts and bounded 50%–300% scaling.
 - [ ] Print, devtools access, and accessibility review.
@@ -56,7 +57,9 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 
 - [ ] Build signed/notarized packages where credentials and platform requirements permit.
 - [ ] Generate checksums, release notes, dependency inventory, and provenance where feasible.
-- [ ] Add dependency/vulnerability scanning and secret scanning.
+- [x] Add automated CodeQL code scanning for JavaScript.
+- [ ] Add lockfile-based reproducible dependency installation and dependency vulnerability scanning.
+- [ ] Add secret scanning.
 - [ ] Test clean install, upgrade, uninstall, profile retention, and rollback.
 - [ ] Publish only artifacts from successful release workflows.
 

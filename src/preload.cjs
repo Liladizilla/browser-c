@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld("browserC", Object.freeze({
   clearHistory: () => ipcRenderer.invoke("browser:history:clear"),
   getDownloads: () => ipcRenderer.invoke("browser:downloads:get"),
   cancelDownload: (id) => ipcRenderer.invoke("browser:downloads:cancel", String(id)),
+  revealDownload: (id) => ipcRenderer.invoke("browser:downloads:reveal", String(id)),
   onDownloads: (callback) => {
     if (typeof callback !== "function") return () => {};
     const listener = (_event, state) => callback(state);
