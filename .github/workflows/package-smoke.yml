@@ -56,7 +56,7 @@ jobs:
           BROWSER_C_EXECUTABLE: ${{ github.workspace }}/release/squashfs-root/AppRun
         run: xvfb-run -a node scripts/smoke-installed-linux.mjs
       - name: Upload validated Linux packages
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: browser-c-linux-package-smoke
           path: release/artifacts/*
