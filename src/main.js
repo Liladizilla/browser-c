@@ -864,6 +864,55 @@ ipcMain.handle("browser:page:save-as", async (event) => {
     return { ok: false, error: error instanceof Error ? error.message : "Could not save this page." };
   }
 });
+ipcMain.handle("browser:page:save-pdf", async (event) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted PDF request." };
+  const tab = activeTab();
+  if (!tab || !isWebUrl(tab.url)) return { ok: false, error: "There is no web page to export." };
+  const safeTitle = String(tab.title || "webpage").replace(/[\\/:*?"<>|\\u0000-\\u001f]/g, "_").slice(0, 100) || "webpage";
+  const result = await dialog.showSaveDialog(windowRef, {
+    title: "Save page as PDF",
+    defaultPath: path.join(app.getPath("downloads"), safeTitle + ".pdf"),
+    filters: [{ name: "PDF document", extensions: ["pdf"] }]
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  try {
+    const pdf = await tab.view.webContents.printToPDF({ printBackground: true, preferCSSPageSize: true });
+    await writeFile(result.filePath, pdf, { mode: 0o600 });
+    return { ok: true, path: result.filePath };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not export this page as PDF." };
+  }
+});
+ipcMain.handle("browser:page:capture", async (event) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted screenshot request." };
+  const tab = activeTab();
+  if (!tab || !isWebUrl(tab.url)) return { ok: false, error: "There is no web page to capture." };
+  const safeTitle = String(tab.title || "screenshot").replace(/[\\/:*?"<>|\\u0000-\\u001f]/g, "_").slice(0, 100) || "screenshot";
+  const result = await dialog.showSaveDialog(windowRef, {
+    title: "Capture page screenshot",
+    defaultPath: path.join(app.getPath("pictures"), safeTitle + ".png"),
+    filters: [{ name: "PNG image", extensions: ["png"] }]
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  try {
+    const image = await tab.view.webContents.capturePage();
+    if (image.isEmpty()) return { ok: false, error: "The page returned an empty screenshot." };
+    await writeFile(result.filePath, image.toPNG(), { mode: 0o600 });
+    return { ok: true, path: result.filePath };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not capture this page." };
+  }
+});
+ipcMain.handle("browser:page:translate", (event) => {
+  if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted translation request." };
+  const tab = activeTab();
+  if (!tab || !isWebUrl(tab.url)) return { ok: false, error: "There is no web page to translate." };
+  const source = new URL(tab.url);
+  if (source.hostname === "translate.google.com") return { ok: false, error: "This page is already open in Google Translate." };
+  const target = "https://translate.google.com/translate?sl=auto&tl=en&u=" + encodeURIComponent(source.href);
+  createTab(target);
+  return { ok: true };
+});
 ipcMain.handle("browser:page:devtools", (event) => {
   if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted developer-tools request." };
   const tab = activeTab();
