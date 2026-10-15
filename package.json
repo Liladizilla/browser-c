@@ -1,1 +1,61 @@
-{"name":"browser-c","version":"0.2.0","private":true,"description":"Cross-platform desktop browser project","license":"MIT","type":"module","main":"src/main.js","engines":{"node":">=22.0.0"},"scripts":{"start":"electron .","test":"node --test","validate":"node scripts/validate-repo.mjs","check":"node --check src/main.js && node --check src/preload.cjs && node --check src/navigation.js && node --check src/renderer/renderer.js"},"devDependencies":{"electron":"44.7.2"}}
+{
+  "name": "browser-c",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Cross-platform desktop browser project",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/main.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "validate": "node scripts/validate-repo.mjs",
+    "check": "node --check src/main.js && node --check src/preload.cjs && node --check src/navigation.js && node --check src/renderer/renderer.js"
+  },
+  "devDependencies": {
+    "electron": "44.7.2"
+  },
+  "build": {
+    "appId": "dev.charis.browserc",
+    "productName": "Browser C",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "README.md",
+      "LICENSE"
+    ],
+    "asar": true,
+    "publish": null,
+    "linux": {
+      "category": "Network;WebBrowser",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity"
+    }
+  }
+}

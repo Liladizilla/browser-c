@@ -61,7 +61,8 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [ ] Add lockfile-based reproducible dependency installation and dependency vulnerability scanning.
 - [ ] Add secret scanning.
 - [ ] Test clean install, upgrade, uninstall, profile retention, and rollback.
-- [ ] Publish only artifacts from successful release workflows.
+- [x] Add a manual/tag-triggered cross-platform packaging workflow that uploads artifacts only after validation and tests pass.
+- [ ] Publish signed/notarized release artifacts; packaging workflow runs still need platform validation.
 
 ## Phase 6 — CharisOS feasibility and integration
 
