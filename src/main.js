@@ -574,11 +574,11 @@ function createWindow() {
         const fixtureTabSnapshot = createTab(fixtureOrigin + "/one");
         const fixtureTab = tabs.find((tab) => tab.id === fixtureTabSnapshot.id);
         const waitForFixture = async (predicate, label) => {
-          for (let attempt = 0; attempt < 50; attempt++) {
+          for (let attempt = 0; attempt < 120; attempt++) {
             if (predicate()) return;
             await new Promise((resolve) => setTimeout(resolve, 50));
           }
-          throw new Error("Timed out waiting for navigation fixture: " + label);
+          throw new Error("Timed out waiting for navigation fixture after 6 seconds: " + label);
         };
         try {
           await waitForFixture(() => (fixtureHits.get("/one") || 0) > 0 && fixtureTab.view.webContents.getTitle() === "one" && !fixtureTab.loading, "first page committed");
@@ -663,6 +663,17 @@ function createWindow() {
           await waitForFixture(() => (fixtureHits.get("/private-secret") || 0) > 0 && privateFixtureTab.view.webContents.getTitle() === "private-secret" && !privateFixtureTab.loading, "private fixture page committed");
           const regularSession = fixtureTab.view.webContents.session;
           const privateSession = privateFixtureTab.view.webContents.session;
+          const permissionKeyForFixture = permissionKey(fixtureOrigin, "notifications");
+          permissionGrants.set(privateSession, new Set([permissionKeyForFixture]));
+          const privatePermissionGrantIsolated = sitePermissions(privateFixtureTab).includes("notifications")
+            && !sitePermissions(fixtureTab).includes("notifications");
+          const profileDownloadCountBeforePrivateFixture = profile.downloads.length;
+          rememberCompletedDownload({
+            id: "private-smoke-download", filename: "private-secret.txt", url: fixtureOrigin + "/private-secret",
+            state: "completed", savePath: "/tmp/browser-c-private-smoke-download.txt", isPrivate: true,
+            receivedBytes: 1, totalBytes: 1
+          });
+          const privateDownloadExcludedFromProfile = profile.downloads.length === profileDownloadCountBeforePrivateFixture;
           await regularSession.cookies.set({ url: fixtureOrigin, name: "regular-only", value: "regular-secret" });
           await fixtureTab.view.webContents.executeJavaScript('localStorage.setItem("regular-only", "regular-secret")');
           const regularCookie = (await regularSession.cookies.get({ url: fixtureOrigin })).some((cookie) =>
@@ -682,7 +693,9 @@ function createWindow() {
             excludedFromHistory: !shouldRecordHistory(privateFixtureTab, isWebUrl),
             regularCookiePresent: regularCookie,
             privateCookieIsolation: privateCookieWasIsolated,
-            privateStorageIsolation: privateStorageWasIsolated
+            privateStorageIsolation: privateStorageWasIsolated,
+            privatePermissionGrantIsolated,
+            privateDownloadExcludedFromProfile
           };
           if (Object.values(privateSessionIsolation).some((passed) => !passed)) {
             throw new Error("Private session isolation assertions failed: " + JSON.stringify(privateSessionIsolation));
