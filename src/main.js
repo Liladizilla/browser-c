@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { isWebUrl, resolveAddress } from "./navigation.js";
+import { canBookmarkTab, persistableTabs, shouldCancelDownloadOnTabClose, shouldPersistCompletedDownload, shouldRecordHistory } from "./privacy-policy.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CHROME_HEIGHT = 178;
@@ -67,8 +68,7 @@ function scheduleSessionSave() {
 async function saveSession() {
   if (!app.isReady()) return;
   const file = path.join(app.getPath("userData"), "session.json");
-  const liveTabs = tabs.filter((tab) => !tab.isPrivate).map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }))
-    .filter((tab) => isWebUrl(tab.url)).slice(0, 20);
+  const liveTabs = persistableTabs(tabs, isWebUrl, 20).map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }));
   const savedTabs = liveTabs.length ? liveTabs : (lastSessionSnapshot?.tabs ?? []);
   const liveActiveIndex = liveTabs.findIndex((tab) => tab.id === activeTabId);
   const payload = {
@@ -123,7 +123,7 @@ async function loadProfile() {
   } catch { profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [] }; }
 }
 function recordHistory(tab) {
-  if (tab.isPrivate || !isWebUrl(tab.url)) return;
+  if (!shouldRecordHistory(tab, isWebUrl)) return;
   profile.history.unshift({ url: tab.url, title: tab.title || tab.url, visitedAt: new Date().toISOString() });
   profile.history = profile.history.slice(0, MAX_HISTORY_ITEMS);
   persistProfile().catch(() => {});
@@ -147,7 +147,7 @@ function sendDownloads() {
   windowRef.webContents.send("browser:downloads:state", [...downloads.values()].map(downloadSnapshot));
 }
 function rememberCompletedDownload(download) {
-  if (download.isPrivate || download.state !== "completed" || typeof download.savePath !== "string") return;
+  if (!shouldPersistCompletedDownload(download)) return;
   profile.downloads = [
     { id: download.id, filename: download.filename, url: isWebUrl(download.url) ? download.url : "",
       state: "completed", receivedBytes: download.receivedBytes, totalBytes: download.totalBytes,
@@ -351,7 +351,7 @@ function closeTab(id = activeTabId) {
   if (tab.isPrivate) {
     for (const [downloadId, download] of downloads) {
       if (download.tabId !== tab.id) continue;
-      if (download.item && ["choosing-location", "in-progress"].includes(download.state)) download.item.cancel();
+      if (download.item && shouldCancelDownloadOnTabClose(download)) download.item.cancel();
       downloads.delete(downloadId);
     }
     sendDownloads();
@@ -375,8 +375,7 @@ function createWindow() {
   windowRef.webContents.on("will-redirect", (event, url) => { if (url !== chromeUrl) event.preventDefault(); });
   windowRef.on("resize", layoutTabs);
   windowRef.on("closed", () => {
-    const savedTabs = tabs.filter((tab) => !tab.isPrivate).map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }))
-      .filter((tab) => isWebUrl(tab.url)).slice(0, 20);
+    const savedTabs = persistableTabs(tabs, isWebUrl, 20).map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }));
     lastSessionSnapshot = {
       activeTabId: activeTab() && !activeTab().isPrivate ? activeTabId : null,
       activeIndex: Math.max(0, savedTabs.findIndex((tab) => tab.id === activeTabId)),
@@ -436,7 +435,7 @@ ipcMain.handle("browser:get-state", () => {
 });
 ipcMain.handle("browser:bookmarks:get", () => profile.bookmarks);
 ipcMain.handle("browser:bookmarks:toggle", async (_event, item) => {
-  if (activeTab()?.isPrivate) return { ok: false, error: "Bookmarks are disabled in private tabs." };
+  if (!canBookmarkTab(activeTab())) return { ok: false, error: "Bookmarks are disabled in private tabs." };
   if (!item || !isWebUrl(item.url)) return { ok: false, error: "Only HTTP and HTTPS pages can be bookmarked." };
   const index = profile.bookmarks.findIndex((bookmark) => bookmark.url === item.url);
   if (index >= 0) profile.bookmarks.splice(index, 1);
