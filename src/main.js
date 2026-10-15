@@ -31,20 +31,21 @@ let profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads:
 let profileWriteQueue = Promise.resolve();
 const downloads = new Map();
 const downloadSessions = new WeakSet();
-const permissionGrants = new Set();
-const pendingPermissionPrompts = new Map();
+const permissionGrants = new WeakMap();
+const pendingPermissionPrompts = new WeakMap();
+const privateSessions = new WeakSet();
 
 const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
 function tabSnapshot(tab) {
   return { id: tab.id, url: tab.url, title: tab.title || "New Tab", loading: Boolean(tab.loading),
     canGoBack: tab.view.webContents.canGoBack(), canGoForward: tab.view.webContents.canGoForward(),
-    zoomFactor: tab.view.webContents.getZoomFactor(), active: tab.id === activeTabId };
+    zoomFactor: tab.view.webContents.getZoomFactor(), active: tab.id === activeTabId, isPrivate: Boolean(tab.isPrivate) };
 }
 function sendState(patch = {}) {
   if (!windowRef || windowRef.isDestroyed()) return;
   const tab = activeTab();
   windowRef.webContents.send("browser:state", {
-    tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C",
+    tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     loading: Boolean(tab?.loading), canGoBack: Boolean(tab && tab.view.webContents.canGoBack()),
     canGoForward: Boolean(tab && tab.view.webContents.canGoForward()),
     zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, ...patch
@@ -66,15 +67,15 @@ function scheduleSessionSave() {
 async function saveSession() {
   if (!app.isReady()) return;
   const file = path.join(app.getPath("userData"), "session.json");
-  const liveTabs = tabs.map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }))
+  const liveTabs = tabs.filter((tab) => !tab.isPrivate).map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }))
     .filter((tab) => isWebUrl(tab.url)).slice(0, 20);
   const savedTabs = liveTabs.length ? liveTabs : (lastSessionSnapshot?.tabs ?? []);
   const liveActiveIndex = liveTabs.findIndex((tab) => tab.id === activeTabId);
   const payload = {
     version: SESSION_VERSION,
-    activeTabId: activeTab()?.id ?? lastSessionSnapshot?.activeTabId ?? null,
+    activeTabId: (activeTab() && !activeTab().isPrivate ? activeTab().id : null) ?? lastSessionSnapshot?.activeTabId ?? null,
     activeIndex: liveActiveIndex >= 0 ? liveActiveIndex : (lastSessionSnapshot?.activeIndex ?? 0),
-    activeUrl: activeTab()?.url ?? lastSessionSnapshot?.activeUrl ?? "https://www.google.com/",
+    activeUrl: (activeTab() && !activeTab().isPrivate ? activeTab().url : null) ?? lastSessionSnapshot?.activeUrl ?? "https://www.google.com/",
     tabs: savedTabs.map(({ url, title }) => ({ url, title })).slice(0, 20)
   };
   await mkdir(path.dirname(file), { recursive: true });
@@ -122,7 +123,7 @@ async function loadProfile() {
   } catch { profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [] }; }
 }
 function recordHistory(tab) {
-  if (!isWebUrl(tab.url)) return;
+  if (tab.isPrivate || !isWebUrl(tab.url)) return;
   profile.history.unshift({ url: tab.url, title: tab.title || tab.url, visitedAt: new Date().toISOString() });
   profile.history = profile.history.slice(0, MAX_HISTORY_ITEMS);
   persistProfile().catch(() => {});
@@ -146,7 +147,7 @@ function sendDownloads() {
   windowRef.webContents.send("browser:downloads:state", [...downloads.values()].map(downloadSnapshot));
 }
 function rememberCompletedDownload(download) {
-  if (download.state !== "completed" || typeof download.savePath !== "string") return;
+  if (download.isPrivate || download.state !== "completed" || typeof download.savePath !== "string") return;
   profile.downloads = [
     { id: download.id, filename: download.filename, url: isWebUrl(download.url) ? download.url : "",
       state: "completed", receivedBytes: download.receivedBytes, totalBytes: download.totalBytes,
@@ -162,7 +163,8 @@ function attachDownloadHandler(browserSession) {
     const id = randomUUID();
     const download = {
       id, filename: item.getFilename(), url: item.getURL(), state: "choosing-location",
-      receivedBytes: 0, totalBytes: item.getTotalBytes(), savePath: null, item, startedAt: new Date().toISOString()
+      receivedBytes: 0, totalBytes: item.getTotalBytes(), savePath: null, item, isPrivate: privateSessions.has(browserSession),
+      tabId: tabs.find((tab) => tab.view.webContents.session === browserSession)?.id ?? null, startedAt: new Date().toISOString()
     };
     downloads.set(id, download);
     while (downloads.size > MAX_DOWNLOADS) {
@@ -212,11 +214,15 @@ function safeOrigin(origin) {
   } catch { return false; }
 }
 function permissionKey(origin, permission) { return origin + "|" + permission; }
-async function requestPermission(origin, permission) {
+async function requestPermission(origin, permission, browserSession) {
   if (!PERMISSION_LABELS[permission] || !safeOrigin(origin)) return false;
   const key = permissionKey(origin, permission);
-  if (permissionGrants.has(key)) return true;
-  if (pendingPermissionPrompts.has(key)) return pendingPermissionPrompts.get(key);
+  let grants = permissionGrants.get(browserSession);
+  if (!grants) { grants = new Set(); permissionGrants.set(browserSession, grants); }
+  let pending = pendingPermissionPrompts.get(browserSession);
+  if (!pending) { pending = new Map(); pendingPermissionPrompts.set(browserSession, pending); }
+  if (grants.has(key)) return true;
+  if (pending.has(key)) return pending.get(key);
   const prompt = (async () => {
     if (!windowRef || windowRef.isDestroyed()) return false;
     const result = await dialog.showMessageBox(windowRef, {
@@ -230,10 +236,10 @@ async function requestPermission(origin, permission) {
       noLink: true
     });
     const allowed = result.response === 1;
-    if (allowed) permissionGrants.add(key);
+    if (allowed) grants.add(key);
     return allowed;
-  })().catch(() => false).finally(() => pendingPermissionPrompts.delete(key));
-  pendingPermissionPrompts.set(key, prompt);
+  })().catch(() => false).finally(() => pending.delete(key));
+  pending.set(key, prompt);
   return prompt;
 }
 function attachPermissionHandlers(browserSession) {
@@ -244,11 +250,13 @@ function attachPermissionHandlers(browserSession) {
       callback(false);
       return;
     }
-    requestPermission(origin, permission).then(callback).catch(() => callback(false));
+    requestPermission(origin, permission, browserSession).then(callback).catch(() => callback(false));
   });
-  browserSession.setPermissionCheckHandler((_contents, permission, requestingOrigin) =>
-    Boolean(PERMISSION_LABELS[permission] && safeOrigin(String(requestingOrigin || ""))
-      && permissionGrants.has(permissionKey(String(requestingOrigin), permission))));
+  browserSession.setPermissionCheckHandler((_contents, permission, requestingOrigin) => {
+    const grants = permissionGrants.get(browserSession);
+    return Boolean(PERMISSION_LABELS[permission] && safeOrigin(String(requestingOrigin || ""))
+      && grants?.has(permissionKey(String(requestingOrigin), permission)));
+  });
 }
 function attachTabEvents(tab) {
   const contents = tab.view.webContents;
@@ -261,7 +269,7 @@ function attachTabEvents(tab) {
   });
   contents.on("page-title-updated", (_event, title) => {
     tab.title = title || "New Tab";
-    const recent = profile.history.find((item) => item.url === tab.url);
+    const recent = tab.isPrivate ? null : profile.history.find((item) => item.url === tab.url);
     if (recent) { recent.title = tab.title; persistProfile().catch(() => {}); }
     sendState();
   });
@@ -283,7 +291,8 @@ function attachTabEvents(tab) {
   contents.on("before-input-event", (event, input) => {
     if (input.type !== "keyDown" || !(input.control || input.meta)) return;
     const key = String(input.key || "").toLowerCase();
-    if (key === "t") { event.preventDefault(); createTab(); }
+    if (key === "n" && input.shift) { event.preventDefault(); createTab("https://www.google.com/", true); }
+    else if (key === "t") { event.preventDefault(); createTab(); }
     else if (key === "w") { event.preventDefault(); closeTab(tab.id); }
     else if (key === "l") { event.preventDefault(); windowRef?.webContents.send("browser:focus-address"); }
     else if (key === "f") { event.preventDefault(); windowRef?.webContents.send("browser:find:open"); }
@@ -302,13 +311,15 @@ function attachTabEvents(tab) {
   attachDownloadHandler(browserSession);
   attachPermissionHandlers(browserSession);
 }
-function createTab(url = "https://www.google.com/") {
+function createTab(url = "https://www.google.com/", privateMode = false) {
   const id = nextTabId++;
+  const partition = privateMode ? "private-" + randomUUID() : "persist:browser-c";
   const view = new WebContentsView({ webPreferences: {
     contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true,
-    allowRunningInsecureContent: false, navigateOnDragDrop: false, partition: "persist:browser-c"
+    allowRunningInsecureContent: false, navigateOnDragDrop: false, partition
   }});
-  const tab = { id, view, url, title: "New Tab", loading: true };
+  const tab = { id, view, url, title: privateMode ? "Private tab" : "New Tab", loading: true, isPrivate: privateMode };
+  if (privateMode) privateSessions.add(view.webContents.session);
   tabs.push(tab); windowRef.contentView.addChildView(view); attachTabEvents(tab);
   activeTabId = id; layoutTabs();
   view.webContents.loadURL(url).catch(() => {
@@ -337,6 +348,13 @@ function closeTab(id = activeTabId) {
   const index = tabs.findIndex((tab) => tab.id === Number(id));
   if (index < 0) return { ok: false, error: "Tab not found." };
   const [tab] = tabs.splice(index, 1);
+  if (tab.isPrivate) {
+    for (const download of downloads.values()) {
+      if (download.tabId === tab.id && download.item && ["choosing-location", "in-progress"].includes(download.state)) download.item.cancel();
+    }
+    tab.view.webContents.session.clearStorageData().catch(() => {});
+    tab.view.webContents.session.clearCache().catch(() => {});
+  }
   windowRef.contentView.removeChildView(tab.view); tab.view.webContents.close();
   if (!tabs.length) createTab();
   else if (tab.id === activeTabId) activeTabId = tabs[Math.min(index, tabs.length - 1)].id;
@@ -354,12 +372,12 @@ function createWindow() {
   windowRef.webContents.on("will-redirect", (event, url) => { if (url !== chromeUrl) event.preventDefault(); });
   windowRef.on("resize", layoutTabs);
   windowRef.on("closed", () => {
-    const savedTabs = tabs.map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }))
+    const savedTabs = tabs.filter((tab) => !tab.isPrivate).map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }))
       .filter((tab) => isWebUrl(tab.url)).slice(0, 20);
     lastSessionSnapshot = {
-      activeTabId,
+      activeTabId: activeTab() && !activeTab().isPrivate ? activeTabId : null,
       activeIndex: Math.max(0, savedTabs.findIndex((tab) => tab.id === activeTabId)),
-      activeUrl: activeTab()?.url ?? savedTabs[0]?.url ?? "https://www.google.com/",
+      activeUrl: activeTab() && !activeTab().isPrivate ? activeTab().url : (savedTabs[0]?.url ?? "https://www.google.com/"),
       tabs: savedTabs.map(({ url, title }) => ({ url, title }))
     };
     windowRef = undefined;
@@ -404,16 +422,18 @@ ipcMain.handle("browser:find:stop", () => {
 ipcMain.handle("browser:zoom", (_event, action) => changeZoom(String(action)));
 ipcMain.handle("browser:home", () => navigate("https://www.google.com/").catch(() => {}));
 ipcMain.handle("browser:new-tab", () => createTab());
+ipcMain.handle("browser:new-private-tab", () => createTab("https://www.google.com/", true));
 ipcMain.handle("browser:activate-tab", (_event, id) => activateTab(id));
 ipcMain.handle("browser:close-tab", (_event, id) => closeTab(id));
 ipcMain.handle("browser:get-state", () => {
   const tab = activeTab();
-  return { tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C",
+  return { tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     canGoBack: Boolean(tab && tab.view.webContents.canGoBack()), canGoForward: Boolean(tab && tab.view.webContents.canGoForward()),
     loading: Boolean(tab?.loading), zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1 };
 });
 ipcMain.handle("browser:bookmarks:get", () => profile.bookmarks);
 ipcMain.handle("browser:bookmarks:toggle", async (_event, item) => {
+  if (activeTab()?.isPrivate) return { ok: false, error: "Bookmarks are disabled in private tabs." };
   if (!item || !isWebUrl(item.url)) return { ok: false, error: "Only HTTP and HTTPS pages can be bookmarked." };
   const index = profile.bookmarks.findIndex((bookmark) => bookmark.url === item.url);
   if (index >= 0) profile.bookmarks.splice(index, 1);
