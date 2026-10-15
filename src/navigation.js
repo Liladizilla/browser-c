@@ -8,6 +8,7 @@ export function resolveAddress(input) {
   }
   if (/^(localhost|127(?:\.\d{1,3}){3})(?::\d+)?(?:\/.*)?$/i.test(value)) return new URL("http://" + value).href;
   if (/^[^\s/]+\.[^\s/]+(?::\d+)?(?:\/.*)?$/.test(value) && !value.includes(" ")) return new URL("https://" + value).href;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value)) throw new TypeError("Only HTTP and HTTPS addresses are supported.");
   return "https://www.google.com/search?q=" + encodeURIComponent(value);
 }
 export function isWebUrl(value) {
