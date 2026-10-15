@@ -21,7 +21,7 @@ sha256sum --check SHA256SUMS.txt
 On Windows PowerShell, verify a named file by comparing its digest with the corresponding line in `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\\Browser-C-0.2.0-win32-x64.exe -Algorithm SHA256
+Get-FileHash .\Browser-C-0.2.0-win32-x64.exe -Algorithm SHA256
 ```
 
 Use the actual filename produced by the workflow. A checksum detects accidental corruption or mismatches; it does not prove who built a package or protect against an attacker who can replace both the package and its manifest.
