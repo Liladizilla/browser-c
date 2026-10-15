@@ -38,7 +38,11 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Explicit session-scoped permission prompts for supported camera/microphone, geolocation, notifications, MIDI, clipboard-read, and pointer-lock requests; unsupported/insecure requests remain denied, with active-site grants revocable from the toolbar.
 - [x] Find in page with next/previous navigation and Ctrl/Cmd+F entry.
 - [x] Per-tab page zoom controls with keyboard shortcuts and bounded 50%–300% scaling.
-- [ ] Print, devtools access, and accessibility review.
+- [x] Print dialog, save page as complete HTML, export page as PDF, capture page screenshot, external translation handoff, and detached developer tools; automated source-level coverage verifies the UI wiring and trusted-chrome IPC guards.
+- [ ] Full keyboard/screen-reader accessibility review and manual print/PDF validation across target OSes.
+- [ ] Password-manager autofill and save-password prompts; the current vault is manually managed and does not automatically capture or fill credentials.
+- [ ] Extension architecture and compatibility/security model; do not claim Chrome Web Store extension compatibility before this is implemented and tested.
+- [ ] Built-in PDF editing and optional screen recording; these are not implemented.
 - [x] Private tabs use unique non-persistent sessions; private URLs are excluded from saved sessions/history and completed-download persistence.
 - [x] Add Linux Electron smoke coverage for private-session cookie/storage isolation, history/session exclusions, permission-grant isolation, private-download persistence exclusion, and cleanup of private cookies on close.
 - [ ] Add crash/restart and actual packaged-build tests proving private state cannot leak into restored sessions or persisted profiles across app restarts.
