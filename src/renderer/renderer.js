@@ -31,7 +31,7 @@ let downloadState = [];
 let currentState = { tabs: [], activeTabId: null };
 
 function renderTabs(tabs = []) {
-  const preserveTabFocus = tabsNode.contains(document.activeElement);
+  const preserveTabFocus = Boolean(tabsNode.contains?.(document.activeElement));
   tabsNode.replaceChildren();
   for (const tab of tabs) {
     const item = document.createElement("div");
