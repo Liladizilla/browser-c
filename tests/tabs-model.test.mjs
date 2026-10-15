@@ -77,3 +77,21 @@ test("download panel displays progress and supports cancellation", () => {
   assert.match(renderer, /mode === "downloads"/);
   assert.match(renderer, /cancelDownload/);
 });
+
+test("find-in-page uses bounded query input and narrow IPC methods", () => {
+  assert.match(main, /findInPage\(value, \{ matchCase: false, findNext: false \}\)/);
+  assert.match(main, /slice\(0, 500\)/);
+  assert.match(preload, /browser:find:start/);
+  assert.match(preload, /browser:find:next/);
+  assert.match(preload, /browser:find:stop/);
+  assert.match(renderer, /openFindBar/);
+});
+test("zoom controls clamp page zoom and expose keyboard shortcuts", () => {
+  assert.match(main, /Math\.min\(3, current \+ 0\.1\)/);
+  assert.match(main, /Math\.max\(0\.5, current - 0\.1\)/);
+  assert.match(main, /setZoomFactor/);
+  assert.match(preload, /browser:zoom/);
+  assert.match(renderer, /zoomReset\.textContent/);
+  assert.match(main, /key === "f"/);
+  assert.match(main, /key === "0"/);
+});
