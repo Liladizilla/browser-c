@@ -6,8 +6,9 @@
 
 - Multi-tab browsing with keyboard shortcuts and session restore.
 - HTTP/HTTPS address navigation, bookmarks, browsing history, and page find/zoom controls.
+- Selectable, profile-persisted search providers: Google, DuckDuckGo, Bing, and Brave Search.
 - Download prompts, progress/cancellation, bounded completed-download history, and reveal-in-folder actions.
-- Session-scoped prompts for a supported set of website permissions, with unsupported and insecure requests denied by default.
+- Session-scoped prompts for a supported set of website permissions, with unsupported and insecure requests denied by default; temporary grants can be revoked for the active site from the toolbar.
 - Private tabs use isolated, non-persistent Electron sessions; downloads saved to disk remain on disk by design.
 - Automated JavaScript checks, cross-platform CI, a Linux Electron integration smoke test, and CodeQL scanning.
 - An initial cross-platform packaging workflow for Linux, Windows, and macOS, with SHA-256 checksum manifests and automated package-format/checksum validation before artifacts are uploaded.
