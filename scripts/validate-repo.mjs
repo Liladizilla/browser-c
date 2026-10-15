@@ -24,6 +24,7 @@ try {
   if (pkg.name !== 'browser-c') failures.push('package.json: unexpected package name');
   if (pkg.license !== 'MIT') failures.push('package.json: license must be MIT');
   if (pkg.main !== 'src/main.js') failures.push('package.json: main must point to src/main.js');
+  if (!pkg.build?.linux?.maintainer || !/^[^<>]+ <[^<>@\s]+@[^<>\s]+>$/.test(pkg.build.linux.maintainer)) failures.push('package.json: Linux package maintainer must be configured for Debian builds');
   if (!pkg.scripts?.start || !pkg.scripts?.test || !pkg.scripts?.validate || !pkg.scripts?.check) {
     failures.push('package.json: start, test, validate, and check scripts are required');
   }
