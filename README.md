@@ -13,7 +13,7 @@
 - Automated JavaScript checks, cross-platform CI, a Linux Electron integration smoke test, and CodeQL scanning.
 - An initial cross-platform packaging workflow for Linux, Windows, and macOS, with dependency auditing, staging that excludes unpacked build intermediates, non-empty package-format checks, SHA-256 checksum validation, and build-provenance attestations before distributable artifacts are uploaded.
 
-This remains a prototype, not a finished or security-certified daily-use browser. The Linux Electron smoke test now exercises local back/forward navigation, reload/stop, redirect handling, failed-navigation recovery, and checks that private tabs use a separate non-persistent session and are excluded from session/history persistence. The smoke suite also checks connection-refused recovery and recovery after a crashed page renderer. These checks do not prove that all websites, downloads, permissions, GPU drivers, codecs, certificate failures, or platform configurations work correctly. CI now silently installs and launches the Windows NSIS build and launches the macOS app bundle extracted from the ZIP, exercising the packaged UI, navigation, and recovery smoke suite. The macOS DMG install path, signing/notarization, broader privacy-leakage testing, upgrades, uninstall, and profile-retention behavior remain unverified. The packaging workflow now checks that each platform produced its expected package formats and that every artifact matches its SHA-256 manifest. Do not treat current CI as a claim that the browser is perfect or ready for sensitive daily use.
+This remains a prototype, not a finished or security-certified daily-use browser. The Linux Electron smoke test now exercises local back/forward navigation, reload/stop, redirect handling, failed-navigation recovery, and checks that private tabs use a separate non-persistent session and are excluded from session/history persistence. The smoke suite also checks connection-refused recovery and recovery after a crashed page renderer. These checks do not prove that all websites, downloads, permissions, GPU drivers, codecs, certificate failures, or platform configurations work correctly. CI now silently installs and launches the Windows NSIS build, launches the macOS app bundle extracted from ZIP, and mounts the macOS DMG, copies its app bundle to a separate install location, and launches it through the same UI/navigation/recovery smoke suite. This does not cover signing/notarization, broader privacy-leakage testing, upgrades, uninstall, or profile-retention behavior. The packaging workflow now checks that each platform produced its expected package formats and that every artifact matches its SHA-256 manifest. Do not treat current CI as a claim that the browser is perfect or ready for sensitive daily use.
 
 ## Security baseline
 
@@ -43,9 +43,9 @@ The committed `package-lock.json` pins the dependency graph for repeatable insta
 
 | Platform | Goal | Status |
 | --- | --- | --- |
-| Windows 10/11 x64 | Desktop app | Packaging workflow added; runtime smoke tests pending |
-| macOS supported Electron architectures | Desktop app | Packaging workflow added; runtime smoke tests pending |
-| Linux x64 | Desktop app | Packaging workflow added; runtime smoke tests pending |
+| Windows 10/11 x64 | Desktop app | CI installs and launches the packaged NSIS build; manual device testing pending |
+| macOS supported Electron architectures | Desktop app | CI launches ZIP app bundle and DMG-installed copy; signing and manual device testing pending |
+| Linux x64 | Desktop app | CI installs Debian package and launches AppImage payload; manual Fedora/device testing pending |
 | CharisOS | Native integration or compatible browser host | Research required |
 
 ## License
