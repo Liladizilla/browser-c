@@ -1,4 +1,4 @@
-import { app, BrowserWindow, WebContentsView, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, WebContentsView, ipcMain, dialog, shell } from "electron";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -11,6 +11,15 @@ const SESSION_VERSION = 1;
 const PROFILE_VERSION = 1;
 const MAX_HISTORY_ITEMS = 500;
 const MAX_BOOKMARKS = 200;
+const MAX_DOWNLOADS = 100;
+const PERMISSION_LABELS = Object.freeze({
+  media: "camera or microphone",
+  geolocation: "location",
+  notifications: "notifications",
+  midi: "MIDI devices",
+  "clipboard-read": "clipboard access",
+  pointerLock: "pointer lock"
+});
 let windowRef;
 let tabs = [];
 let activeTabId = null;
@@ -18,10 +27,12 @@ let nextTabId = 1;
 let sessionSaveTimer;
 let quitAfterSessionSave = false;
 let lastSessionSnapshot = null;
-let profile = { version: PROFILE_VERSION, bookmarks: [], history: [] };
+let profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [] };
 let profileWriteQueue = Promise.resolve();
 const downloads = new Map();
 const downloadSessions = new WeakSet();
+const permissionGrants = new Set();
+const pendingPermissionPrompts = new Map();
 
 const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
 function tabSnapshot(tab) {
@@ -101,9 +112,14 @@ async function loadProfile() {
       bookmarks: Array.isArray(data.bookmarks) ? data.bookmarks
         .filter((item) => item && isWebUrl(item.url) && typeof item.title === "string").slice(0, MAX_BOOKMARKS) : [],
       history: Array.isArray(data.history) ? data.history
-        .filter((item) => item && isWebUrl(item.url) && typeof item.visitedAt === "string").slice(0, MAX_HISTORY_ITEMS) : []
+        .filter((item) => item && isWebUrl(item.url) && typeof item.visitedAt === "string").slice(0, MAX_HISTORY_ITEMS) : [],
+      downloads: Array.isArray(data.downloads) ? data.downloads
+        .filter((item) => item && typeof item.id === "string" && typeof item.filename === "string"
+          && typeof item.savePath === "string" && item.state === "completed")
+        .slice(0, MAX_DOWNLOADS) : []
     };
-  } catch { profile = { version: PROFILE_VERSION, bookmarks: [], history: [] }; }
+    for (const item of profile.downloads) downloads.set(item.id, { ...item, item: null, restored: true });
+  } catch { profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [] }; }
 }
 function recordHistory(tab) {
   if (!isWebUrl(tab.url)) return;
@@ -129,18 +145,48 @@ function sendDownloads() {
   if (!windowRef || windowRef.isDestroyed()) return;
   windowRef.webContents.send("browser:downloads:state", [...downloads.values()].map(downloadSnapshot));
 }
+function rememberCompletedDownload(download) {
+  if (download.state !== "completed" || typeof download.savePath !== "string") return;
+  profile.downloads = [
+    { id: download.id, filename: download.filename, url: isWebUrl(download.url) ? download.url : "",
+      state: "completed", receivedBytes: download.receivedBytes, totalBytes: download.totalBytes,
+      savePath: download.savePath, completedAt: new Date().toISOString() },
+    ...profile.downloads.filter((item) => item.id !== download.id)
+  ].slice(0, MAX_DOWNLOADS);
+  persistProfile().catch(() => {});
+}
 function attachDownloadHandler(browserSession) {
   if (downloadSessions.has(browserSession)) return;
   downloadSessions.add(browserSession);
-  browserSession.on("will-download", async (event, item) => {
+  browserSession.on("will-download", async (_event, item) => {
     const id = randomUUID();
     const download = {
       id, filename: item.getFilename(), url: item.getURL(), state: "choosing-location",
-      receivedBytes: 0, totalBytes: item.getTotalBytes(), savePath: null, item
+      receivedBytes: 0, totalBytes: item.getTotalBytes(), savePath: null, item, startedAt: new Date().toISOString()
     };
     downloads.set(id, download);
+    while (downloads.size > MAX_DOWNLOADS) {
+      const oldest = downloads.keys().next().value;
+      if (oldest === id) break;
+      if (downloads.get(oldest)?.state === "in-progress" || downloads.get(oldest)?.state === "choosing-location") break;
+      downloads.delete(oldest);
+    }
+    item.on("updated", (_event, state) => {
+      download.state = state === "interrupted" ? "interrupted" : "in-progress";
+      download.receivedBytes = item.getReceivedBytes();
+      download.totalBytes = item.getTotalBytes();
+      sendDownloads();
+    });
+    item.once("done", (_event, state) => {
+      download.state = state;
+      download.receivedBytes = item.getReceivedBytes();
+      download.totalBytes = item.getTotalBytes();
+      if (state === "completed") rememberCompletedDownload(download);
+      sendDownloads();
+    });
     sendDownloads();
     try {
+      if (!windowRef || windowRef.isDestroyed()) throw new Error("Browser window is unavailable.");
       const result = await dialog.showSaveDialog(windowRef, { defaultPath: download.filename, title: "Save download" });
       if (result.canceled || !result.filePath) {
         item.cancel();
@@ -156,21 +202,53 @@ function attachDownloadHandler(browserSession) {
       item.cancel();
       download.state = "cancelled";
       sendDownloads();
+    }
+  });
+}
+function safeOrigin(origin) {
+  try {
+    const parsed = new URL(origin);
+    return parsed.protocol === "https:" || (parsed.protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname));
+  } catch { return false; }
+}
+function permissionKey(origin, permission) { return origin + "|" + permission; }
+async function requestPermission(origin, permission) {
+  if (!PERMISSION_LABELS[permission] || !safeOrigin(origin)) return false;
+  const key = permissionKey(origin, permission);
+  if (permissionGrants.has(key)) return true;
+  if (pendingPermissionPrompts.has(key)) return pendingPermissionPrompts.get(key);
+  const prompt = (async () => {
+    if (!windowRef || windowRef.isDestroyed()) return false;
+    const result = await dialog.showMessageBox(windowRef, {
+      type: "question",
+      title: "Website permission request",
+      message: new URL(origin).host + " wants access to " + PERMISSION_LABELS[permission] + ".",
+      detail: "Allowing applies only for this running Browser C session. Unknown permissions and insecure origins are blocked.",
+      buttons: ["Block", "Allow for this session"],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true
+    });
+    const allowed = result.response === 1;
+    if (allowed) permissionGrants.add(key);
+    return allowed;
+  })().catch(() => false).finally(() => pendingPermissionPrompts.delete(key));
+  pendingPermissionPrompts.set(key, prompt);
+  return prompt;
+}
+function attachPermissionHandlers(browserSession) {
+  browserSession.setPermissionRequestHandler((contents, permission, callback, details) => {
+    const origin = String(details?.requestingOrigin || "");
+    const currentUrl = contents.getURL();
+    if (!isWebUrl(currentUrl) || !safeOrigin(origin) || !PERMISSION_LABELS[permission]) {
+      callback(false);
       return;
     }
-    item.on("updated", (_event, state) => {
-      download.state = state === "interrupted" ? "interrupted" : "in-progress";
-      download.receivedBytes = item.getReceivedBytes();
-      download.totalBytes = item.getTotalBytes();
-      sendDownloads();
-    });
-    item.once("done", (_event, state) => {
-      download.state = state;
-      download.receivedBytes = item.getReceivedBytes();
-      download.totalBytes = item.getTotalBytes();
-      sendDownloads();
-    });
+    requestPermission(origin, permission).then(callback).catch(() => callback(false));
   });
+  browserSession.setPermissionCheckHandler((_contents, permission, requestingOrigin) =>
+    Boolean(PERMISSION_LABELS[permission] && safeOrigin(String(requestingOrigin || ""))
+      && permissionGrants.has(permissionKey(String(requestingOrigin), permission))));
 }
 function attachTabEvents(tab) {
   const contents = tab.view.webContents;
@@ -222,8 +300,7 @@ function attachTabEvents(tab) {
   });
   const browserSession = contents.session;
   attachDownloadHandler(browserSession);
-  browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-  browserSession.setPermissionCheckHandler(() => false);
+  attachPermissionHandlers(browserSession);
 }
 function createTab(url = "https://www.google.com/") {
   const id = nextTabId++;
@@ -349,10 +426,18 @@ ipcMain.handle("browser:history:get", () => profile.history.slice(0, 100));
 ipcMain.handle("browser:downloads:get", () => [...downloads.values()].map(downloadSnapshot));
 ipcMain.handle("browser:downloads:cancel", (_event, id) => {
   const download = downloads.get(String(id));
-  if (!download || !["choosing-location", "in-progress"].includes(download.state)) return { ok: false };
+  if (!download?.item || !["choosing-location", "in-progress"].includes(download.state)) return { ok: false };
   download.item.cancel();
   download.state = "cancelled";
   sendDownloads();
+  return { ok: true };
+});
+ipcMain.handle("browser:downloads:reveal", (_event, id) => {
+  const download = downloads.get(String(id));
+  if (!download || download.state !== "completed" || typeof download.savePath !== "string" || !download.savePath) {
+    return { ok: false, error: "Only completed downloads can be revealed." };
+  }
+  shell.showItemInFolder(download.savePath);
   return { ok: true };
 });
 ipcMain.handle("browser:history:clear", async () => {
