@@ -95,3 +95,10 @@ test("Linux package workflow launches the extracted AppImage payload", () => {
   assert.ok(packageSmoke.includes("xvfb-run -a node scripts/smoke-installed-linux.mjs"));
   assert.ok(packageSmoke.includes("test -x squashfs-root/AppRun"));
 });
+
+test("CI runs the Electron integration smoke suite on Windows and macOS", () => {
+  assert.ok(ci.includes("electron-cross-platform-smoke:"));
+  assert.ok(ci.includes("os: [windows-latest, macos-latest]"));
+  assert.ok(ci.includes("run: npm run smoke"));
+  assert.ok(ci.includes("timeout-minutes: 10"));
+});
