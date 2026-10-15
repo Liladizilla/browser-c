@@ -8,10 +8,11 @@
 - HTTP/HTTPS address navigation, bookmarks, browsing history, and page find/zoom controls.
 - Download prompts, progress/cancellation, bounded completed-download history, and reveal-in-folder actions.
 - Session-scoped prompts for a supported set of website permissions, with unsupported and insecure requests denied by default.
-- Automated JavaScript checks, tests, and CodeQL scanning.
-- An initial cross-platform packaging workflow for Linux, Windows, and macOS.
+- Private tabs use isolated, non-persistent Electron sessions; downloads saved to disk remain on disk by design.
+- Automated JavaScript checks, cross-platform CI, a Linux startup smoke test, and CodeQL scanning.
+- An initial cross-platform packaging workflow for Linux, Windows, and macOS, with SHA-256 checksum manifests.
 
-This remains a prototype, not a finished or security-certified daily-use browser. Installer builds still need actual launch/navigation smoke tests on each OS. Private browsing, a generated dependency lockfile, signing/notarization, and complete release validation remain outstanding.
+This remains a prototype, not a finished or security-certified daily-use browser. The smoke test checks startup only, not full navigation or private-session leakage. Installer builds still need actual launch/navigation smoke tests on each OS. Signing/notarization and complete release validation remain outstanding.
 
 ## Security baseline
 
@@ -28,14 +29,14 @@ Read [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security
 Use Node.js 24 for CI parity. Install dependencies and run:
 
 ```sh
-npm install --no-package-lock --no-audit --no-fund
+npm ci
 npm test
 npm run validate
 npm run check
 npm start
 ```
 
-A generated `package-lock.json` is not committed yet, so dependency installation is not fully reproducible. Do not treat green unit tests as proof that all websites, GPU drivers, codecs, or platform configurations work.
+The committed `package-lock.json` pins the dependency graph for repeatable installs. Do not treat green unit tests or the Linux startup smoke test as proof that all websites, GPU drivers, codecs, private-session behavior, or platform configurations work.
 
 ## Platform goals
 
