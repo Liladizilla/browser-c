@@ -17,6 +17,14 @@ const libraryTitle = document.querySelector("#library-title");
 const libraryList = document.querySelector("#library-list");
 const closeLibrary = document.querySelector("#close-library");
 const clearHistory = document.querySelector("#clear-history");
+const findBar = document.querySelector("#find-bar");
+const findQuery = document.querySelector("#find-query");
+const findPrevious = document.querySelector("#find-previous");
+const findNext = document.querySelector("#find-next");
+const findClose = document.querySelector("#find-close");
+const zoomOut = document.querySelector("#zoom-out");
+const zoomReset = document.querySelector("#zoom-reset");
+const zoomIn = document.querySelector("#zoom-in");
 let libraryMode = "bookmarks";
 let downloadState = [];
 let currentState = { tabs: [], activeTabId: null };
@@ -55,6 +63,8 @@ function applyState(state = {}) {
   reload.title = state.loading ? "Stop loading" : "Reload";
   reload.setAttribute("aria-label", reload.title);
   status.textContent = state.error ? "Load error: " + state.error : state.loading ? "Loading…" : state.title || "Ready";
+  zoomReset.textContent = Math.round((state.zoomFactor || 1) * 100) + "%";
+  zoomReset.title = "Reset zoom (Ctrl+0)";
   document.title = state.title ? state.title + " · Browser C" : "Browser C";
 }
 form.addEventListener("submit", async (event) => {
@@ -71,6 +81,28 @@ reload.addEventListener("click", async () => {
 });
 home.addEventListener("click", () => api.home());
 newTab.addEventListener("click", () => api.newTab());
+zoomOut.addEventListener("click", () => api.changeZoom("out"));
+zoomReset.addEventListener("click", () => api.changeZoom("reset"));
+zoomIn.addEventListener("click", () => api.changeZoom("in"));
+function openFindBar() {
+  findBar.hidden = false;
+  findQuery.focus();
+  findQuery.select();
+}
+async function searchInPage(next = false) {
+  const query = findQuery.value.trim();
+  if (!query) { await api.stopFind(); return; }
+  const result = next === "previous" ? await api.findPrevious(query) : next ? await api.findNext(query) : await api.findInPage(query);
+  if (!result?.ok) status.textContent = result?.error || "Find failed";
+}
+findQuery.addEventListener("input", () => searchInPage(false));
+findQuery.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") { event.preventDefault(); searchInPage(true); }
+  else if (event.key === "Escape") { event.preventDefault(); findBar.hidden = true; api.stopFind(); }
+});
+findPrevious.addEventListener("click", () => searchInPage("previous"));
+findNext.addEventListener("click", () => searchInPage(true));
+findClose.addEventListener("click", () => { findBar.hidden = true; api.stopFind(); });
 async function showLibrary(mode) {
   libraryMode = mode;
   libraryPanel.hidden = false;
@@ -156,6 +188,7 @@ clearHistory.addEventListener("click", async () => {
 });
 
 api.onFocusAddress(() => { address.focus(); address.select(); });
+api.onFindOpen(openFindBar);
 document.addEventListener("keydown", (event) => {
   const modifier = event.ctrlKey || event.metaKey;
   if (!modifier) return;
@@ -163,6 +196,10 @@ document.addEventListener("keydown", (event) => {
   if (key === "t") { event.preventDefault(); api.newTab(); }
   else if (key === "w") { event.preventDefault(); api.closeTab(currentState.activeTabId); }
   else if (key === "l") { event.preventDefault(); address.focus(); address.select(); }
+  else if (key === "f") { event.preventDefault(); openFindBar(); }
+  else if (key === "+" || key === "=") { event.preventDefault(); api.changeZoom("in"); }
+  else if (key === "-") { event.preventDefault(); api.changeZoom("out"); }
+  else if (key === "0") { event.preventDefault(); api.changeZoom("reset"); }
   else if (key === "r") { event.preventDefault(); api.reload(); }
   else if (key === "tab" && currentState.tabs.length > 1) {
     event.preventDefault();
