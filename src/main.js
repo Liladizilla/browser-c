@@ -349,9 +349,12 @@ function closeTab(id = activeTabId) {
   if (index < 0) return { ok: false, error: "Tab not found." };
   const [tab] = tabs.splice(index, 1);
   if (tab.isPrivate) {
-    for (const download of downloads.values()) {
-      if (download.tabId === tab.id && download.item && ["choosing-location", "in-progress"].includes(download.state)) download.item.cancel();
+    for (const [downloadId, download] of downloads) {
+      if (download.tabId !== tab.id) continue;
+      if (download.item && ["choosing-location", "in-progress"].includes(download.state)) download.item.cancel();
+      downloads.delete(downloadId);
     }
+    sendDownloads();
     tab.view.webContents.session.clearStorageData().catch(() => {});
     tab.view.webContents.session.clearCache().catch(() => {});
   }
