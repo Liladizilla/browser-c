@@ -10,7 +10,7 @@ test("warns for executable, script, and installer downloads case-insensitively",
 
 test("detects a risky final extension even when the name contains a misleading suffix", () => {
   assert.equal(typeof downloadSafetyWarning("invoice.pdf.exe"), "string");
-  assert.equal(typeof downloadSafetyWarning("photo.jpg"), "object");
+  assert.equal(downloadSafetyWarning("photo.jpg"), null);
 });
 
 test("does not warn for common documents, images, archives, or ordinary text", () => {
