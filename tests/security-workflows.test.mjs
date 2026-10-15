@@ -32,19 +32,21 @@ test("secret scanning has read-only repository permissions", () => {
   assert.ok(!secrets.includes("pull-requests: write"));
 });
 
-test("desktop packages are validated before artifact provenance is attested", () => {
+test("desktop packages generate an SBOM and validate all release files before attestation", () => {
   assert.ok(packages.includes("npm audit --audit-level=high"));
   assert.ok(packages.includes("node scripts/collect-release-artifacts.mjs ${{ matrix.platform }}"));
-  assert.ok(packages.includes("node scripts/validate-release.mjs ${{ matrix.platform }} release/artifacts"));
+  assert.ok(packages.includes("node scripts/generate-sbom.mjs release/artifacts/SBOM.spdx.json"));
   assert.ok(packages.includes("npm run checksums -- release/artifacts"));
+  assert.ok(packages.includes("node scripts/validate-release.mjs ${{ matrix.platform }} release/artifacts"));
   assert.ok(packages.includes("path: release/artifacts/*"));
-  assert.ok(packages.includes("node scripts/validate-release.mjs ${{ matrix.platform }}"));
   assert.ok(packages.includes("uses: actions/attest-build-provenance@v4"));
   assert.ok(packages.includes("subject-path:"));
   assert.ok(packages.includes("id-token: write"));
   assert.ok(packages.includes("attestations: write"));
-  assert.ok(packages.indexOf("Validate package formats and checksums") < packages.indexOf("Attest package and checksum provenance"));
-  assert.ok(packages.indexOf("Attest package and checksum provenance") < packages.indexOf("Upload package artifacts"));
+  assert.ok(packages.indexOf("Generate SPDX software bill of materials") < packages.indexOf("Generate SHA-256 checksums"));
+  assert.ok(packages.indexOf("Generate SHA-256 checksums") < packages.indexOf("Validate package formats, SBOM, and checksums"));
+  assert.ok(packages.indexOf("Validate package formats, SBOM, and checksums") < packages.indexOf("Attest package, SBOM, and checksum provenance"));
+  assert.ok(packages.indexOf("Attest package, SBOM, and checksum provenance") < packages.indexOf("Upload package artifacts and dependency inventory"));
 });
 
 test("Electron smoke waits for the UI smoke suite instead of sampling too early", () => {
@@ -63,11 +65,11 @@ test("release staging excludes unpacked build output and rejects empty packages"
   assert.ok(collector.includes("copyFile("));
 });
 
-
-test("Linux package smoke builds and inspects real distributable payloads", () => {
+test("Linux package smoke builds, inventories, and inspects real distributable payloads", () => {
   assert.ok(packageSmoke.includes("pull_request:"));
   assert.ok(packageSmoke.includes("npx --yes electron-builder@26.0.12 --linux AppImage deb"));
   assert.ok(packageSmoke.includes("node scripts/collect-release-artifacts.mjs linux"));
+  assert.ok(packageSmoke.includes("node scripts/generate-sbom.mjs release/artifacts/SBOM.spdx.json"));
   assert.ok(packageSmoke.includes("npm run checksums -- release/artifacts"));
   assert.ok(packageSmoke.includes("node scripts/validate-release.mjs linux release/artifacts"));
   assert.ok(packageSmoke.includes("dpkg-deb --info release/artifacts/*.deb"));
@@ -76,11 +78,9 @@ test("Linux package smoke builds and inspects real distributable payloads", () =
   assert.ok(packageSmoke.includes("if-no-files-found: error"));
 });
 
-
 test("Linux Debian package maintainer metadata is configured", () => {
   assert.match(pkg.build.linux.maintainer, /^[^<>]+ <[^<>@\s]+@[^<>\s]+>$/);
 });
-
 
 test("Linux package workflow installs and launches the packaged application", () => {
   assert.ok(packageSmoke.includes("sudo apt-get install -y ./release/artifacts/*.deb"));
@@ -88,7 +88,6 @@ test("Linux package workflow installs and launches the packaged application", ()
   assert.ok(packageSmoke.includes("xvfb-run -a node scripts/smoke-installed-linux.mjs"));
   assert.ok(packageSmoke.includes("retention-days: 7"));
 });
-
 
 test("Linux package workflow launches the extracted AppImage payload", () => {
   assert.ok(packageSmoke.includes("APPDIR: ${{ github.workspace }}/release/squashfs-root"));
