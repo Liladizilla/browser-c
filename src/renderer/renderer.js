@@ -13,6 +13,7 @@ const bookmarkCurrent = document.querySelector("#bookmark-current");
 const showBookmarks = document.querySelector("#show-bookmarks");
 const showHistory = document.querySelector("#show-history");
 const showDownloads = document.querySelector("#show-downloads");
+const clearSitePermissions = document.querySelector("#clear-site-permissions");
 const libraryPanel = document.querySelector("#library-panel");
 const libraryTitle = document.querySelector("#library-title");
 const libraryList = document.querySelector("#library-list");
@@ -86,6 +87,12 @@ function applyState(state = {}) {
   bookmarkCurrent.disabled = Boolean(state.isPrivate);
   bookmarkCurrent.title = state.isPrivate ? "Bookmarks are disabled in private tabs" : "Bookmark current page";
   document.body.classList.toggle("private-mode", Boolean(state.isPrivate));
+  const sitePermissions = Array.isArray(state.sitePermissions) ? state.sitePermissions : [];
+  clearSitePermissions.disabled = sitePermissions.length === 0;
+  clearSitePermissions.textContent = sitePermissions.length ? `Revoke access (${sitePermissions.length})` : "Site access";
+  clearSitePermissions.title = sitePermissions.length
+    ? "Revoke this site’s temporary permissions: " + sitePermissions.join(", ")
+    : "This site has no temporary permissions";
   zoomReset.textContent = Math.round((state.zoomFactor || 1) * 100) + "%";
   zoomReset.title = "Reset zoom (Ctrl+0)";
   document.title = state.title ? state.title + " · Browser C" : "Browser C";
@@ -205,6 +212,13 @@ bookmarkCurrent.addEventListener("click", async () => {
 showBookmarks.addEventListener("click", () => showLibrary("bookmarks", showBookmarks));
 showHistory.addEventListener("click", () => showLibrary("history", showHistory));
 showDownloads.addEventListener("click", () => showLibrary("downloads", showDownloads));
+clearSitePermissions.addEventListener("click", async () => {
+  const result = await api.clearSitePermissions();
+  if (result?.ok) status.textContent = result.cleared
+    ? "Revoked " + result.cleared + " temporary site permission(s)."
+    : "This site had no temporary permissions to revoke.";
+  else status.textContent = result?.error || "Could not revoke site permissions.";
+});
 function formatBytes(bytes = 0) {
   if (bytes < 1024) return bytes + " B";
   const units = ["KB", "MB", "GB", "TB"];

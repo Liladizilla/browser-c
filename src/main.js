@@ -52,7 +52,7 @@ function sendState(patch = {}) {
     tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     loading: Boolean(tab?.loading), error: tab?.error || "", canGoBack: Boolean(tab && canGoBack(tab.view.webContents)),
     canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
-    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, ...patch
+    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab), ...patch
   });
 }
 function layoutTabs() {
@@ -223,7 +223,17 @@ function safeOrigin(origin) {
     return parsed.protocol === "https:" || (parsed.protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(parsed.hostname));
   } catch { return false; }
 }
-function permissionKey(origin, permission) { return origin + "|" + permission; }
+function permissionKey(origin, permission) { return new URL(origin).origin + "|" + permission; }
+function sitePermissions(tab) {
+  if (!tab || !isWebUrl(tab.url)) return [];
+  let origin;
+  try { origin = new URL(tab.url).origin; } catch { return []; }
+  if (!safeOrigin(origin)) return [];
+  const grants = permissionGrants.get(tab.view.webContents.session);
+  return Object.entries(PERMISSION_LABELS)
+    .filter(([permission]) => grants?.has(permissionKey(origin, permission)))
+    .map(([, label]) => label);
+}
 async function requestPermission(origin, permission, browserSession) {
   if (!PERMISSION_LABELS[permission] || !safeOrigin(origin)) return false;
   const key = permissionKey(origin, permission);
@@ -260,7 +270,10 @@ function attachPermissionHandlers(browserSession) {
       callback(false);
       return;
     }
-    requestPermission(origin, permission, browserSession).then(callback).catch(() => callback(false));
+    requestPermission(origin, permission, browserSession).then((allowed) => {
+      callback(allowed);
+      if (allowed) sendState();
+    }).catch(() => callback(false));
   });
   browserSession.setPermissionCheckHandler((_contents, permission, requestingOrigin) => {
     const grants = permissionGrants.get(browserSession);
@@ -740,7 +753,24 @@ ipcMain.handle("browser:get-state", () => {
   const tab = activeTab();
   return { tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     canGoBack: Boolean(tab && canGoBack(tab.view.webContents)), canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
-    loading: Boolean(tab?.loading), error: tab?.error || "", zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1 };
+    loading: Boolean(tab?.loading), error: tab?.error || "",
+    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab) };
+});
+ipcMain.handle("browser:permissions:clear-site", () => {
+  const tab = activeTab();
+  const permissions = sitePermissions(tab);
+  if (!tab || !permissions.length) return { ok: true, cleared: 0 };
+  let origin;
+  try { origin = new URL(tab.url).origin; } catch { return { ok: false, error: "The current page has no valid site origin." }; }
+  const grants = permissionGrants.get(tab.view.webContents.session);
+  let cleared = 0;
+  if (grants) {
+    for (const permission of Object.keys(PERMISSION_LABELS)) {
+      if (grants.delete(permissionKey(origin, permission))) cleared++;
+    }
+  }
+  sendState();
+  return { ok: true, cleared };
 });
 ipcMain.handle("browser:bookmarks:get", () => profile.bookmarks);
 ipcMain.handle("browser:bookmarks:toggle", async (_event, item) => {

@@ -34,6 +34,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid #d6a64c; outline-
 .library-controls { display: flex; align-items: center; gap: 6px; padding-left: 80px; }
 .library-controls button, .clear-history { flex: 0 0 auto; width: auto; height: 23px; padding: 0 9px; border: 1px solid #343a40; border-radius: 6px; font-size: 11px; }
 .library-controls #bookmark-current { color: #e4c27a; }
+.library-controls #clear-site-permissions:not(:disabled) { border-color: #8a6d35; color: #e4c27a; }
+.library-controls button:disabled { opacity: 0.45; cursor: default; }
 .zoom-controls { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
 .zoom-controls button { width: 27px; flex-basis: 27px; height: 27px; font-size: 13px; }
 #zoom-reset { width: 43px; flex-basis: 43px; font-size: 10px; }

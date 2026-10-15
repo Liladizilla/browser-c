@@ -39,6 +39,15 @@ test("minimum window width makes the narrow responsive layout reachable and smok
   assert.match(css, /@media \(max-width: 520px\)/);
 });
 
+test("site permission controls stay disabled until the active site has temporary grants", () => {
+  assert.match(html, /id="clear-site-permissions"[^>]*disabled>Site access<\/button>/);
+  assert.match(renderer, /clearSitePermissions\.disabled = sitePermissions\.length === 0/);
+  assert.match(renderer, /api\.clearSitePermissions\(\)/);
+  assert.match(main, /browser:permissions:clear-site/);
+  assert.match(main, /grants\.delete\(permissionKey\(origin, permission\)\)/);
+  assert.match(main, /function permissionKey\(origin, permission\) \{ return new URL\(origin\)\.origin/);
+});
+
 test("tab list supports arrow and boundary keyboard navigation", () => {
   assert.match(renderer, /\["ArrowLeft", "ArrowRight", "Home", "End"\]/);
   assert.match(renderer, /api\.activateTab\(Number\(nextTab\.dataset\.tabId\)\)/);
