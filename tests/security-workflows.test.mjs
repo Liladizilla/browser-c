@@ -78,5 +78,5 @@ test("Linux package smoke builds and inspects real distributable payloads", () =
 
 
 test("Linux Debian package maintainer metadata is configured", () => {
-  assert.match(pkg.build.linux.maintainer, /^[^<>]+ <[^<>@\\s]+@[^<>\\s]+>$/);
+  assert.match(pkg.build.linux.maintainer, /^[^<>]+ <[^<>@\s]+@[^<>\\s]+>$/);
 });
