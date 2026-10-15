@@ -112,3 +112,28 @@ test("download event listeners are attached before the save dialog await", () =>
   const doneListener = main.indexOf('item.once("done"', listener);
   assert.ok(listener >= 0 && doneListener > listener && dialogCall > doneListener);
 });
+
+test("private tabs use unique non-persistent partitions and never enter saved sessions", () => {
+  assert.match(main, /private-" \+ randomUUID\(\)/);
+  assert.match(main, /partition: "persist:browser-c"/);
+  assert.match(main, /tabs\.filter\(\(tab\) => !tab\.isPrivate\)/);
+  assert.match(main, /if \(tab\.isPrivate \|\| !isWebUrl\(tab\.url\)\) return/);
+  assert.match(main, /isPrivate: Boolean\(tab\?\.isPrivate\)/);
+});
+test("private tabs do not persist downloads or bookmark current pages", () => {
+  assert.match(main, /if \(download\.isPrivate \|\| download\.state !== "completed"/);
+  assert.match(main, /if \(activeTab\(\)\?\.isPrivate\) return \{ ok: false, error: "Bookmarks are disabled in private tabs\." \}/);
+  assert.match(main, /if \(download\.tabId !== tab\.id\) continue/);
+});
+test("permission grants are scoped to each Electron session", () => {
+  assert.match(main, /const permissionGrants = new WeakMap\(\)/);
+  assert.match(main, /permissionGrants\.get\(browserSession\)/);
+  assert.match(main, /requestPermission\(origin, permission, browserSession\)/);
+});
+test("private tab creation is exposed through a narrow IPC and visible control", () => {
+  assert.match(main, /browser:new-private-tab/);
+  assert.match(preload, /newPrivateTab: \(\) => ipcRenderer\.invoke\("browser:new-private-tab"\)/);
+  assert.match(renderer, /api\.newPrivateTab\(\)/);
+  assert.match(renderer, /event\.shiftKey/);
+  assert.match(renderer, /state\.isPrivate/);
+});
