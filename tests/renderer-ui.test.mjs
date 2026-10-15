@@ -45,6 +45,7 @@ test("site permission controls stay disabled until the active site has temporary
   assert.match(renderer, /api\.clearSitePermissions\(\)/);
   assert.match(main, /browser:permissions:clear-site/);
   assert.match(main, /grants\.delete\(permissionKey\(origin, permission\)\)/);
+  assert.match(main, /function permissionKey\(origin, permission\) \{ return new URL\(origin\)\.origin/);
 });
 
 test("tab list supports arrow and boundary keyboard navigation", () => {
