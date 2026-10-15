@@ -42,13 +42,7 @@
       <button id="show-bookmarks" title="Show bookmarks" aria-controls="library-panel" aria-expanded="false">Bookmarks</button>
       <button id="show-history" title="Show browsing history" aria-controls="library-panel" aria-expanded="false">History</button>
       <button id="show-downloads" title="Show downloads" aria-controls="library-panel" aria-expanded="false">Downloads</button>
-      <label class="search-provider-label" for="search-provider">Search</label>
-      <select id="search-provider" aria-label="Default search provider">
-        <option value="google">Google</option>
-        <option value="duckduckgo">DuckDuckGo</option>
-        <option value="bing">Bing</option>
-        <option value="brave">Brave Search</option>
-      </select>
+      <button id="open-settings" type="button" aria-controls="settings-panel" aria-expanded="false">Settings</button>
       <button id="clear-site-permissions" title="This site has no temporary permissions" disabled>Site access</button>
       <details class="tools-menu">
         <summary aria-label="Page tools">Tools</summary>
@@ -68,6 +62,28 @@
     <div id="status" role="status" aria-live="polite">Starting Browser C…</div>
     <button id="retry-navigation" class="retry-navigation" type="button" hidden>Retry</button>
   </header>
+  <section id="settings-panel" class="settings-panel" hidden aria-labelledby="settings-title">
+    <div class="library-heading"><strong id="settings-title">Browser settings</strong><button id="close-settings" type="button" aria-label="Close settings">×</button></div>
+    <form id="settings-form" class="settings-form">
+      <label for="search-provider">Default search provider</label>
+      <select id="search-provider" name="searchProvider">
+        <option value="google">Google</option>
+        <option value="duckduckgo">DuckDuckGo</option>
+        <option value="bing">Bing</option>
+        <option value="brave">Brave Search</option>
+      </select>
+      <label for="theme-setting">Appearance</label>
+      <select id="theme-setting" name="theme">
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+        <option value="system">Follow system</option>
+      </select>
+      <label for="homepage-setting">Home page</label>
+      <input id="homepage-setting" name="homePage" type="url" required placeholder="https://example.com">
+      <p class="settings-note">Settings are stored in this local browser profile. Website account sync is not included.</p>
+      <button class="settings-save" type="submit">Save settings</button>
+    </form>
+  </section>
   <section id="library-panel" class="library-panel" hidden aria-labelledby="library-title">
     <div class="library-heading"><strong id="library-title">Bookmarks</strong><button id="close-library" aria-label="Close panel">×</button></div>
     <div id="library-list" class="library-list"></div>

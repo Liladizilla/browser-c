@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld("browserC", Object.freeze({
   getState: () => ipcRenderer.invoke("browser:get-state"),
   clearSitePermissions: () => ipcRenderer.invoke("browser:permissions:clear-site"),
   setSearchProvider: (provider) => ipcRenderer.invoke("browser:settings:search-provider", String(provider ?? "")),
+  savePreferences: (preferences) => ipcRenderer.invoke("browser:settings:preferences", { theme: preferences?.theme, homePage: preferences?.homePage }),
   getBookmarks: () => ipcRenderer.invoke("browser:bookmarks:get"),
   toggleBookmark: (item) => ipcRenderer.invoke("browser:bookmarks:toggle", { url: String(item?.url ?? ""), title: String(item?.title ?? "") }),
   getHistory: () => ipcRenderer.invoke("browser:history:get"),

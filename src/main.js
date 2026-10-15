@@ -31,7 +31,7 @@ let nextTabId = 1;
 let sessionSaveTimer;
 let quitAfterSessionSave = false;
 let lastSessionSnapshot = null;
-let profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [], searchProvider: "google" };
+let profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [], searchProvider: "google", theme: "dark", homePage: "https://www.google.com/" };
 let profileWriteQueue = Promise.resolve();
 const downloads = new Map();
 const downloadSessions = new WeakSet();
@@ -54,7 +54,7 @@ function sendState(patch = {}) {
     tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     loading: Boolean(tab?.loading), error: tab?.error || "", canGoBack: Boolean(tab && canGoBack(tab.view.webContents)),
     canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
-    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab), searchProvider: profile.searchProvider, windowMaximized: Boolean(windowRef?.isMaximized()), ...patch
+    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab), searchProvider: profile.searchProvider, theme: profile.theme, homePage: profile.homePage, windowMaximized: Boolean(windowRef?.isMaximized()), ...patch
   });
 }
 function layoutTabs() {
@@ -116,6 +116,8 @@ async function loadProfile() {
     profile = {
       version: PROFILE_VERSION,
       searchProvider: Object.hasOwn(SEARCH_PROVIDERS, data.searchProvider) ? data.searchProvider : "google",
+      theme: ["dark", "light", "system"].includes(data.theme) ? data.theme : "dark",
+      homePage: typeof data.homePage === "string" && isWebUrl(data.homePage) ? data.homePage : "https://www.google.com/",
       bookmarks: Array.isArray(data.bookmarks) ? data.bookmarks
         .filter((item) => item && isWebUrl(item.url) && typeof item.title === "string").slice(0, MAX_BOOKMARKS) : [],
       history: Array.isArray(data.history) ? data.history
@@ -126,7 +128,7 @@ async function loadProfile() {
         .slice(0, MAX_DOWNLOADS) : []
     };
     for (const item of profile.downloads) downloads.set(item.id, { ...item, item: null, restored: true });
-  } catch { profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [], searchProvider: "google" }; }
+  } catch { profile = { version: PROFILE_VERSION, bookmarks: [], history: [], downloads: [], searchProvider: "google", theme: "dark", homePage: "https://www.google.com/" }; }
 }
 function recordHistory(tab) {
   if (!shouldRecordHistory(tab, isWebUrl)) return;
@@ -903,7 +905,7 @@ ipcMain.handle("browser:find:stop", () => {
   return { ok: true };
 });
 ipcMain.handle("browser:zoom", (_event, action) => changeZoom(String(action)));
-ipcMain.handle("browser:home", () => navigate("https://www.google.com/").catch(() => {}));
+ipcMain.handle("browser:home", () => navigate(profile.homePage).catch(() => {}));
 ipcMain.handle("browser:new-tab", () => createTab());
 ipcMain.handle("browser:new-private-tab", () => createTab("https://www.google.com/", true));
 ipcMain.handle("browser:activate-tab", (_event, id) => activateTab(id));
@@ -930,6 +932,23 @@ ipcMain.handle("browser:permissions:clear-site", () => {
   }
   sendState();
   return { ok: true, cleared };
+});
+ipcMain.handle("browser:settings:preferences", async (_event, input) => {
+  if (!input || typeof input !== "object") return { ok: false, error: "Invalid settings." };
+  const next = {};
+  if (Object.hasOwn(input, "theme")) {
+    if (!["dark", "light", "system"].includes(input.theme)) return { ok: false, error: "Choose a supported theme." };
+    next.theme = input.theme;
+  }
+  if (Object.hasOwn(input, "homePage")) {
+    const homePage = String(input.homePage ?? "").trim();
+    if (!isWebUrl(homePage)) return { ok: false, error: "Homepage must be a valid HTTP or HTTPS URL." };
+    next.homePage = new URL(homePage).href;
+  }
+  Object.assign(profile, next);
+  await persistProfile();
+  sendState();
+  return { ok: true, theme: profile.theme, homePage: profile.homePage };
 });
 ipcMain.handle("browser:settings:search-provider", async (_event, provider) => {
   if (typeof provider !== "string" || !Object.hasOwn(SEARCH_PROVIDERS, provider)) {
