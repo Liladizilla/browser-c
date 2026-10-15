@@ -42,7 +42,7 @@ assert.ok(Array.isArray(sbom.packages) && sbom.packages.length > 0, "SBOM must c
 const manifest = await readFile(path.join(directory, "SHA256SUMS.txt"), "utf8");
 const records = new Map();
 for (const rawLine of manifest.split(String.fromCharCode(10)).filter((line) => line.trim())) {
-  const line = rawLine.replace(/\\r$/, "");
+  const line = rawLine.replace(/\r$/, "");
   const match = /^([a-f0-9]{64})  (.+)$/.exec(line);
   assert.ok(match, "Malformed checksum line: " + line);
   assert.ok(safeFilename(match[2]), "Unsafe checksum filename: " + JSON.stringify(match[2]));
