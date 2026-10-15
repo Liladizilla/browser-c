@@ -6,7 +6,7 @@ const requiredFiles = [
   'docs/ARCHITECTURE.md', 'docs/ROADMAP.md', 'docs/SECURITY_MODEL.md',
   '.github/workflows/ci.yml', 'package.json', 'src/main.js', 'src/preload.cjs',
   'src/navigation.js', 'src/renderer/index.html', 'src/renderer/styles.css',
-  'src/renderer/renderer.js', 'tests/navigation.test.mjs'
+  'src/renderer/renderer.js', 'tests/navigation.test.mjs', 'tests/security-model.test.mjs'
 ];
 const failures = [];
 for (const file of requiredFiles) {
