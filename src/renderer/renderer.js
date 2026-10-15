@@ -92,7 +92,7 @@ function openFindBar() {
 async function searchInPage(next = false) {
   const query = findQuery.value.trim();
   if (!query) { await api.stopFind(); return; }
-  const result = next ? await api.findNext(query) : await api.findInPage(query);
+  const result = next === "previous" ? await api.findPrevious(query) : next ? await api.findNext(query) : await api.findInPage(query);
   if (!result?.ok) status.textContent = result?.error || "Find failed";
 }
 findQuery.addEventListener("input", () => searchInPage(false));
@@ -100,7 +100,7 @@ findQuery.addEventListener("keydown", (event) => {
   if (event.key === "Enter") { event.preventDefault(); searchInPage(true); }
   else if (event.key === "Escape") { event.preventDefault(); findBar.hidden = true; api.stopFind(); }
 });
-findPrevious.addEventListener("click", () => searchInPage(true));
+findPrevious.addEventListener("click", () => searchInPage("previous"));
 findNext.addEventListener("click", () => searchInPage(true));
 findClose.addEventListener("click", () => { findBar.hidden = true; api.stopFind(); });
 async function showLibrary(mode) {
@@ -197,6 +197,9 @@ document.addEventListener("keydown", (event) => {
   else if (key === "w") { event.preventDefault(); api.closeTab(currentState.activeTabId); }
   else if (key === "l") { event.preventDefault(); address.focus(); address.select(); }
   else if (key === "f") { event.preventDefault(); openFindBar(); }
+  else if (key === "+" || key === "=") { event.preventDefault(); api.changeZoom("in"); }
+  else if (key === "-") { event.preventDefault(); api.changeZoom("out"); }
+  else if (key === "0") { event.preventDefault(); api.changeZoom("reset"); }
   else if (key === "r") { event.preventDefault(); api.reload(); }
   else if (key === "tab" && currentState.tabs.length > 1) {
     event.preventDefault();
