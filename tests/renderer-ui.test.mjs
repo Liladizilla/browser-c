@@ -42,5 +42,5 @@ test("minimum window width makes the narrow responsive layout reachable and smok
 test("tab list supports arrow and boundary keyboard navigation", () => {
   assert.match(renderer, /\["ArrowLeft", "ArrowRight", "Home", "End"\]/);
   assert.match(renderer, /api\.activateTab\(Number\(nextTab\.dataset\.tabId\)\)/);
-  assert.match(renderer, /select\.dataset\.tabId = String\(tab\.id\)/);
+  assert.match(renderer, /setAttribute\("data-tab-id", String\(tab\.id\)\)/);
 });
