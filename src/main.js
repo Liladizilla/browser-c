@@ -433,9 +433,12 @@ function createWindow() {
             && getComputedStyle(findBar).position === "absolute"
             && findBar.getBoundingClientRect().top < document.querySelector(".toolbar").getBoundingClientRect().bottom;
           document.querySelector("#find-close").click();
-          const regularTab = [...document.querySelectorAll(".tab:not(.private-tab) .tab-select")][0];
-          if (regularTab) regularTab.click();
-          await waitFor(() => !document.body.classList.contains("private-mode"), "regular tab state");
+          privateSelect.dispatchEvent(new KeyboardEvent("keydown", {
+            key: "ArrowLeft", bubbles: true, cancelable: true
+          }));
+          await waitFor(() => !document.body.classList.contains("private-mode"), "keyboard-selected regular tab");
+          const keyboardTabNavigationWorks = document.activeElement?.dataset?.tabId
+            === document.querySelector(".tab:not(.private-tab) .tab-select")?.dataset?.tabId;
           privateTab.querySelector(".tab-close").click();
           await waitFor(() => !document.querySelector(".tab.private-tab"), "private tab close");
           return {
@@ -443,12 +446,14 @@ function createWindow() {
             bookmarkDisabled: privateState.bookmarkDisabled,
             privacyStatusClear: privateState.statusClear,
             findShortcutOpensOverlay: findOverlay,
+            keyboardTabNavigationWorks,
             privateTabCloses: !document.querySelector(".tab.private-tab")
           };
         })()`);
         if (!interactions.privateTabLabel?.startsWith("Private tab:")
           || !interactions.bookmarkDisabled || !interactions.privacyStatusClear
-          || !interactions.findShortcutOpensOverlay || !interactions.privateTabCloses) {
+          || !interactions.findShortcutOpensOverlay || !interactions.keyboardTabNavigationWorks
+          || !interactions.privateTabCloses) {
           throw new Error("UI interaction assertions failed: " + JSON.stringify(interactions));
         }
         windowRef.setSize(520, 840);
