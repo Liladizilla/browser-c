@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 
 const ci = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
 const secrets = await readFile(new URL("../.github/workflows/secrets.yml", import.meta.url), "utf8");
+const packages = await readFile(new URL("../.github/workflows/packages.yml", import.meta.url), "utf8");
+const smoke = await readFile(new URL("../scripts/smoke-electron.mjs", import.meta.url), "utf8");
 const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const lock = JSON.parse(await readFile(new URL("../package-lock.json", import.meta.url), "utf8"));
 
@@ -26,4 +28,21 @@ test("secret scanning has read-only repository permissions", () => {
   assert.ok(secrets.includes("pull-requests: read"));
   assert.ok(!secrets.includes("contents: write"));
   assert.ok(!secrets.includes("pull-requests: write"));
+});
+
+test("desktop packages are validated before artifact provenance is attested", () => {
+  assert.ok(packages.includes("node scripts/validate-release.mjs ${{ matrix.platform }}"));
+  assert.ok(packages.includes("uses: actions/attest-build-provenance@v3"));
+  assert.ok(packages.includes("subject-path:"));
+  assert.ok(packages.includes("id-token: write"));
+  assert.ok(packages.includes("attestations: write"));
+  assert.ok(packages.indexOf("Validate package formats and checksums") < packages.indexOf("Attest package and checksum provenance"));
+  assert.ok(packages.indexOf("Attest package and checksum provenance") < packages.indexOf("Upload package artifacts"));
+});
+
+test("Electron smoke waits for the UI smoke suite instead of sampling too early", () => {
+  assert.ok(smoke.includes("BROWSER_C_UI_SMOKE_(?:PASS|FAIL)"));
+  assert.ok(smoke.includes("startupWindowMs = 45_000"));
+  assert.ok(smoke.includes("clearTimeout(timeoutHandle)"));
+  assert.ok(!smoke.includes("setInterval("));
 });

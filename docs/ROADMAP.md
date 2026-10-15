@@ -60,10 +60,10 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 ## Phase 5 — Release engineering and hardening
 
 - [ ] Build signed/notarized packages where credentials and platform requirements permit.
-- [ ] Generate checksums, release notes, dependency inventory, and provenance where feasible.
+- [x] Generate SHA-256 checksums and attest package provenance in the packaging workflow; release notes and a complete dependency inventory remain open.
 - [x] Add automated CodeQL code scanning for JavaScript.
-- [ ] Add lockfile-based reproducible dependency installation and dependency vulnerability scanning.
-- [ ] Add secret scanning.
+- [x] Add lockfile-based reproducible dependency installation and dependency vulnerability scanning.
+- [x] Add automated secret scanning of pull requests, pushes, and repository history.
 - [ ] Test clean install, upgrade, uninstall, profile retention, and rollback.
 - [x] Add a manual/tag-triggered cross-platform packaging workflow that uploads artifacts only after validation and tests pass.
 - [ ] Publish signed/notarized release artifacts; packaging workflow runs still need platform validation.
