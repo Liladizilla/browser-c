@@ -50,7 +50,7 @@ function sendState(patch = {}) {
   const tab = activeTab();
   windowRef.webContents.send("browser:state", {
     tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
-    loading: Boolean(tab?.loading), canGoBack: Boolean(tab && canGoBack(tab.view.webContents)),
+    loading: Boolean(tab?.loading), error: tab?.error || "", canGoBack: Boolean(tab && canGoBack(tab.view.webContents)),
     canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
     zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, ...patch
   });
@@ -643,7 +643,7 @@ ipcMain.handle("browser:get-state", () => {
   const tab = activeTab();
   return { tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     canGoBack: Boolean(tab && canGoBack(tab.view.webContents)), canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
-    loading: Boolean(tab?.loading), zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1 };
+    loading: Boolean(tab?.loading), error: tab?.error || "", zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1 };
 });
 ipcMain.handle("browser:bookmarks:get", () => profile.bookmarks);
 ipcMain.handle("browser:bookmarks:toggle", async (_event, item) => {
