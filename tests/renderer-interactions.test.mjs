@@ -82,8 +82,8 @@ function createHarness() {
       this.handlers.set(type, callbacks);
     }
   };
-  elements.get("#password-panel").hidden = true;
-  elements.get("#settings-panel").hidden = true;
+  document.querySelector("#password-panel").hidden = true;
+  document.querySelector("#settings-panel").hidden = true;
   vm.runInNewContext(rendererSource, { window: { browserC: api }, document, console, Date });
   return { elements, apiCalls, apiListeners, document };
 }
