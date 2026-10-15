@@ -100,7 +100,7 @@ form.addEventListener("submit", async (event) => {
 });
 back.addEventListener("click", () => api.back());
 forward.addEventListener("click", () => api.forward());
-retryNavigation.addEventListener("click", () => api.reload());
+retryNavigation.addEventListener("click", () => api.navigate(address.value));
 reload.addEventListener("click", async () => {
   const state = await api.getState();
   if (state.loading) await api.stop(); else await api.reload();
