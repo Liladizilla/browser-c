@@ -54,7 +54,7 @@ function sendState(patch = {}) {
     tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     loading: Boolean(tab?.loading), error: tab?.error || "", canGoBack: Boolean(tab && canGoBack(tab.view.webContents)),
     canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
-    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab), searchProvider: profile.searchProvider, ...patch
+    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab), searchProvider: profile.searchProvider, windowMaximized: Boolean(windowRef?.isMaximized()), ...patch
   });
 }
 function layoutTabs() {
@@ -913,7 +913,7 @@ ipcMain.handle("browser:get-state", () => {
   return { tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
     canGoBack: Boolean(tab && canGoBack(tab.view.webContents)), canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
     loading: Boolean(tab?.loading), error: tab?.error || "",
-    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab), searchProvider: profile.searchProvider };
+    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, sitePermissions: sitePermissions(tab), searchProvider: profile.searchProvider, windowMaximized: Boolean(windowRef?.isMaximized()) };
 });
 ipcMain.handle("browser:permissions:clear-site", () => {
   const tab = activeTab();
