@@ -8,7 +8,7 @@ The `Desktop packages` workflow runs when a `v*` tag is pushed or when manually 
 - Windows: NSIS installer
 - macOS: DMG and ZIP
 
-Each platform job uses the committed npm lockfile with `npm ci`, runs `npm audit --audit-level=high`, repository validation, syntax checks, and automated tests, then builds packages with Electron Builder. A staging step copies only the expected distributable package formats into `release/artifacts`, excluding unpacked application directories and builder intermediates. The workflow rejects empty packages, generates a `SHA256SUMS.txt` manifest, and validates that the expected formats exist and every staged artifact is listed exactly once with a matching SHA-256 digest. Only the staged packages and checksum manifest are attested and uploaded. Workflow artifacts are retained for 14 days and are not the same as a published GitHub Release.
+Each platform job uses the committed npm lockfile with `npm ci`, runs `npm audit --audit-level=high`, repository validation, syntax checks, and automated tests, then builds packages with Electron Builder. A staging step copies only the expected distributable package formats into `release/artifacts`, excluding unpacked application directories and builder intermediates. The workflow rejects empty packages, generates a `SHA256SUMS.txt` manifest, and validates that the expected formats exist, rejects unexpected or cross-platform artifact types, and requires every staged artifact to be listed exactly once with a matching SHA-256 digest. Only the staged packages and checksum manifest are attested and uploaded. Workflow artifacts are retained for 14 days and are not the same as a published GitHub Release.
 
 ## Verify downloaded artifacts
 

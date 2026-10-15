@@ -17,6 +17,10 @@ const entries = await readdir(directory, { withFileTypes: true });
 const artifacts = entries.filter((entry) => entry.isFile() && entry.name !== "SHA256SUMS.txt").map((entry) => entry.name).sort();
 assert.ok(artifacts.length > 0, "Release directory contains no package artifacts");
 for (const name of artifacts) {
+  assert.ok(expectedExtensions[platform].some((extension) => name.toLowerCase().endsWith(extension.toLowerCase())),
+    "Unexpected release artifact type: " + name + "; allowed extensions: " + expectedExtensions[platform].join(", "));
+}
+for (const name of artifacts) {
   assert.ok(!/[\u0000-\u001f\u007f/\\]/.test(name), "Unsafe artifact filename: " + JSON.stringify(name));
   const details = await stat(path.join(directory, name));
   assert.ok(details.size > 0, "Package artifact is empty: " + name);
