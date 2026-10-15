@@ -60,6 +60,7 @@ reload.addEventListener("click", async () => {
 });
 home.addEventListener("click", () => api.home());
 newTab.addEventListener("click", () => api.newTab());
+api.onFocusAddress(() => { address.focus(); address.select(); });
 document.addEventListener("keydown", (event) => {
   const modifier = event.ctrlKey || event.metaKey;
   if (!modifier) return;
