@@ -52,6 +52,7 @@ jobs:
           test -f squashfs-root/resources/app.asar
       - name: Launch the extracted AppImage payload and run browser smoke tests
         env:
+          APPDIR: ${{ github.workspace }}/release/squashfs-root
           BROWSER_C_EXECUTABLE: ${{ github.workspace }}/release/squashfs-root/AppRun
         run: xvfb-run -a node scripts/smoke-installed-linux.mjs
       - name: Upload validated Linux packages
