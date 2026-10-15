@@ -9,10 +9,10 @@
 - Download prompts, progress/cancellation, bounded completed-download history, and reveal-in-folder actions.
 - Session-scoped prompts for a supported set of website permissions, with unsupported and insecure requests denied by default.
 - Private tabs use isolated, non-persistent Electron sessions; downloads saved to disk remain on disk by design.
-- Automated JavaScript checks, cross-platform CI, a Linux startup smoke test, and CodeQL scanning.
+- Automated JavaScript checks, cross-platform CI, a Linux Electron integration smoke test, and CodeQL scanning.
 - An initial cross-platform packaging workflow for Linux, Windows, and macOS, with SHA-256 checksum manifests.
 
-This remains a prototype, not a finished or security-certified daily-use browser. The smoke test checks startup only, not full navigation or private-session leakage. Installer builds still need actual launch/navigation smoke tests on each OS. Signing/notarization and complete release validation remain outstanding.
+This remains a prototype, not a finished or security-certified daily-use browser. The Linux Electron smoke test now exercises local back/forward navigation, reload/stop, redirect handling, failed-navigation recovery, and checks that private tabs use a separate non-persistent session and are excluded from session/history persistence. These checks do not prove that all websites, downloads, permissions, GPU drivers, codecs, or platform configurations work correctly. Installer builds still need actual launch and navigation smoke tests on Windows and macOS. Code signing/notarization, broader privacy-leakage testing, and full release validation remain outstanding. Do not treat current CI as a claim that the browser is perfect or ready for sensitive daily use.
 
 ## Security baseline
 

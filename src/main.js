@@ -502,6 +502,11 @@ function createWindow() {
         const fixtureServer = createServer((request, response) => {
           const route = new URL(request.url || "/", "http://127.0.0.1").pathname;
           fixtureHits.set(route, (fixtureHits.get(route) || 0) + 1);
+          if (route === "/redirect") {
+            response.writeHead(302, { location: "/redirected" });
+            response.end();
+            return;
+          }
           if (route === "/fail") {
             request.socket.destroy();
             return;
@@ -532,7 +537,7 @@ function createWindow() {
           throw new Error("Timed out waiting for navigation fixture: " + label);
         };
         try {
-          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "first page");
+          await waitForFixture(() => (fixtureHits.get("/one") || 0) > 0 && fixtureTab.view.webContents.getTitle() === "one" && !fixtureTab.loading, "first page committed");
           await navigate(fixtureOrigin + "/two", fixtureTab.id);
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "second page");
           const waitForNavigationEvent = (targetPath, trigger) => new Promise((resolve, reject) => {
@@ -594,6 +599,30 @@ function createWindow() {
             throw new Error("Navigation integration assertions failed: " + JSON.stringify(navigationIntegration));
           }
           console.log("BROWSER_C_NAVIGATION_SMOKE_PASS " + JSON.stringify(navigationIntegration));
+          await navigate(fixtureOrigin + "/redirect", fixtureTab.id);
+          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/redirected") && !fixtureTab.loading, "redirect destination");
+          const redirectFollowed = fixtureTab.view.webContents.getURL().endsWith("/redirected");
+          await navigate(fixtureOrigin + "/two", fixtureTab.id);
+          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "second page after redirect");
+          const redirectIntegration = { redirectFollowed, finalUrl: fixtureTab.view.webContents.getURL() };
+          if (!redirectIntegration.redirectFollowed) throw new Error("Redirect integration assertion failed: " + JSON.stringify(redirectIntegration));
+          console.log("BROWSER_C_REDIRECT_SMOKE_PASS " + JSON.stringify(redirectIntegration));
+          const privateFixtureSnapshot = createTab(fixtureOrigin + "/private-secret", true);
+          const privateFixtureTab = tabs.find((tab) => tab.id === privateFixtureSnapshot.id);
+          await waitForFixture(() => (fixtureHits.get("/private-secret") || 0) > 0 && privateFixtureTab.view.webContents.getTitle() === "private-secret" && !privateFixtureTab.loading, "private fixture page committed");
+          const regularSession = fixtureTab.view.webContents.session;
+          const privateSession = privateFixtureTab.view.webContents.session;
+          const privateSessionIsolation = {
+            separateSession: privateSession !== regularSession,
+            nonPersistentSession: !privateSession.isPersistent(),
+            excludedFromSession: !persistableTabs(tabs, isWebUrl).some((tab) => tab.id === privateFixtureTab.id),
+            excludedFromHistory: !shouldRecordHistory(privateFixtureTab, isWebUrl)
+          };
+          if (Object.values(privateSessionIsolation).some((passed) => !passed)) {
+            throw new Error("Private session isolation assertions failed: " + JSON.stringify(privateSessionIsolation));
+          }
+          console.log("BROWSER_C_PRIVATE_SESSION_ISOLATION_PASS " + JSON.stringify(privateSessionIsolation));
+          closeTab(privateFixtureTab.id);
         } finally {
           closeTab(fixtureTab.id);
           await new Promise((resolve) => fixtureServer.close(resolve));
