@@ -13,6 +13,7 @@ let activeTabId = null;
 let nextTabId = 1;
 let sessionSaveTimer;
 let quitAfterSessionSave = false;
+let lastSessionSnapshot = null;
 
 const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
 function tabSnapshot(tab) {
@@ -45,8 +46,17 @@ function scheduleSessionSave() {
 async function saveSession() {
   if (!app.isReady()) return;
   const file = path.join(app.getPath("userData"), "session.json");
-  const payload = { version: SESSION_VERSION, activeTabId, activeUrl: activeTab()?.url ?? "https://www.google.com/",
-    tabs: tabs.map((tab) => ({ url: tab.url, title: tab.title })).filter((tab) => isWebUrl(tab.url)).slice(0, 20) };
+  const liveTabs = tabs.map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }))
+    .filter((tab) => isWebUrl(tab.url)).slice(0, 20);
+  const savedTabs = liveTabs.length ? liveTabs : (lastSessionSnapshot?.tabs ?? []);
+  const liveActiveIndex = liveTabs.findIndex((tab) => tab.id === activeTabId);
+  const payload = {
+    version: SESSION_VERSION,
+    activeTabId: activeTab()?.id ?? lastSessionSnapshot?.activeTabId ?? null,
+    activeIndex: liveActiveIndex >= 0 ? liveActiveIndex : (lastSessionSnapshot?.activeIndex ?? 0),
+    activeUrl: activeTab()?.url ?? lastSessionSnapshot?.activeUrl ?? "https://www.google.com/",
+    tabs: savedTabs.map(({ url, title }) => ({ url, title })).slice(0, 20)
+  };
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, JSON.stringify(payload, null, 2), { mode: 0o600 });
 }
@@ -55,12 +65,13 @@ async function readSession() {
     const file = path.join(app.getPath("userData"), "session.json");
     const data = JSON.parse(await readFile(file, "utf8"));
     if (data.version !== SESSION_VERSION || !Array.isArray(data.tabs)) return [];
-    const urls = data.tabs.map((tab) => tab?.url).filter((url) => typeof url === "string" && isWebUrl(url)).slice(0, 10);
-    if (typeof data.activeUrl === "string" && urls.includes(data.activeUrl)) {
-      return [...urls.filter((url) => url !== data.activeUrl), data.activeUrl];
-    }
-    return urls;
-  } catch { return []; }
+    const urls = data.tabs.map((tab) => tab?.url)
+      .filter((url) => typeof url === "string" && isWebUrl(url)).slice(0, 10);
+    const activeIndex = Number.isInteger(data.activeIndex)
+      ? Math.max(0, Math.min(data.activeIndex, Math.max(0, urls.length - 1)))
+      : Math.max(0, urls.indexOf(data.activeUrl));
+    return { urls, activeIndex };
+  } catch { return { urls: [], activeIndex: 0 }; }
 }
 async function navigate(rawInput, tabId = activeTabId) {
   const tab = tabs.find((candidate) => candidate.id === tabId);
@@ -94,6 +105,20 @@ function attachTabEvents(tab) {
     if (isMainFrame && code !== -3) {
       tab.loading = false;
       if (tab.id === activeTabId) sendState({ error: description, url: validatedURL });
+    }
+  });
+  contents.on("before-input-event", (event, input) => {
+    if (input.type !== "keyDown" || !(input.control || input.meta)) return;
+    const key = String(input.key || "").toLowerCase();
+    if (key === "t") { event.preventDefault(); createTab(); }
+    else if (key === "w") { event.preventDefault(); closeTab(tab.id); }
+    else if (key === "l") { event.preventDefault(); windowRef?.webContents.send("browser:focus-address"); }
+    else if (key === "r") { event.preventDefault(); contents.reload(); }
+    else if (key === "tab" && tabs.length > 1) {
+      event.preventDefault();
+      const index = tabs.findIndex((candidate) => candidate.id === activeTabId);
+      const delta = input.shift ? -1 : 1;
+      activateTab(tabs[(index + delta + tabs.length) % tabs.length].id);
     }
   });
   const browserSession = contents.session;
@@ -141,7 +166,19 @@ function createWindow() {
   windowRef.webContents.on("will-navigate", (event, url) => { if (url !== chromeUrl) event.preventDefault(); });
   windowRef.webContents.on("will-redirect", (event, url) => { if (url !== chromeUrl) event.preventDefault(); });
   windowRef.on("resize", layoutTabs);
-  windowRef.on("closed", () => { windowRef = undefined; tabs = []; activeTabId = null; });
+  windowRef.on("closed", () => {
+    const savedTabs = tabs.map((tab) => ({ id: tab.id, url: tab.url, title: tab.title }))
+      .filter((tab) => isWebUrl(tab.url)).slice(0, 20);
+    lastSessionSnapshot = {
+      activeTabId,
+      activeIndex: Math.max(0, savedTabs.findIndex((tab) => tab.id === activeTabId)),
+      activeUrl: activeTab()?.url ?? savedTabs[0]?.url ?? "https://www.google.com/",
+      tabs: savedTabs.map(({ url, title }) => ({ url, title }))
+    };
+    windowRef = undefined;
+    tabs = [];
+    activeTabId = null;
+  });
   windowRef.loadFile(chromePath);
 }
 ipcMain.handle("browser:navigate", async (_event, input) => {
@@ -162,16 +199,23 @@ ipcMain.handle("browser:get-state", () => {
     canGoBack: Boolean(tab && tab.view.webContents.canGoBack()), canGoForward: Boolean(tab && tab.view.webContents.canGoForward()),
     loading: Boolean(tab?.loading) };
 });
+function restoreTabs(session) {
+  if (session.urls.length) {
+    for (const url of session.urls) createTab(url);
+    activateTab(tabs[Math.min(session.activeIndex, tabs.length - 1)].id);
+  } else createTab();
+  layoutTabs();
+  sendState();
+}
 app.whenReady().then(async () => {
   createWindow();
-  const restored = await readSession();
-  if (restored.length) {
-    for (const tab of tabs) { windowRef.contentView.removeChildView(tab.view); tab.view.webContents.close(); }
-    tabs = []; activeTabId = null;
-    for (const url of restored) createTab(url);
-    layoutTabs(); sendState();
-  } else createTab();
-  app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) { createWindow(); createTab(); } });
+  restoreTabs(await readSession());
+  app.on("activate", async () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+      restoreTabs(await readSession());
+    }
+  });
 });
 app.on("before-quit", (event) => {
   if (quitAfterSessionSave) return;
