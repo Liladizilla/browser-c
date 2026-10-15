@@ -8,19 +8,37 @@ The `Desktop packages` workflow runs when a `v*` tag is pushed or when manually 
 - Windows: NSIS installer
 - macOS: DMG and ZIP
 
-Each platform job installs the pinned Electron application dependency, runs repository validation, syntax checks, and automated tests, then builds and uploads its artifacts. Workflow artifacts are retained for 14 days and are not the same as a published GitHub Release.
+Each platform job uses the committed npm lockfile with `npm ci`, runs repository validation, syntax checks, and automated tests, then builds packages with Electron Builder. The workflow generates a `SHA256SUMS.txt` manifest for the files in that platform's `release/` directory and uploads the packages plus manifest as a workflow artifact. Workflow artifacts are retained for 14 days and are not the same as a published GitHub Release.
 
-## Current limitations
+## Verify downloaded artifacts
 
-- The repository does not yet contain a generated `package-lock.json`; installs currently use `npm install --no-package-lock`. This is not a fully reproducible dependency graph. Do not switch CI to `npm ci` until a real lockfile has been generated and validated.
-- Packaging is an initial CI path, not proof that installers launch or run correctly on every platform.
-- macOS signing/notarization, Windows code signing, checksums, SBOM/provenance, clean-install/upgrade testing, and actual OS smoke tests remain future release gates.
-- Do not advertise artifacts as stable releases until platform smoke tests and security checks are complete.
+Keep the package and its `SHA256SUMS.txt` file together. From a Linux/macOS terminal, run:
+
+```sh
+sha256sum --check SHA256SUMS.txt
+```
+
+On Windows PowerShell, verify a named file by comparing its digest with the corresponding line in `SHA256SUMS.txt`:
+
+```powershell
+Get-FileHash .\Browser-C-0.2.0-win32-x64.exe -Algorithm SHA256
+```
+
+Use the actual filename produced by the workflow. A checksum detects accidental corruption or mismatches; it does not prove who built a package or protect against an attacker who can replace both the package and its manifest.
+
+## Release gates and limitations
+
+- Workflow artifacts are build outputs for testing, not stable public releases.
+- The Linux Electron startup smoke test checks that the application stays alive during startup under Xvfb. It is not a full navigation, download, or private-session end-to-end test.
+- macOS signing/notarization, Windows code signing, signed provenance/attestations, SBOM publication, clean-install/upgrade testing, and runtime smoke tests on each target OS remain future release gates.
+- Do not advertise an artifact as a stable release until platform launch and security checks are complete.
 
 ## Local checks
 
 ```sh
+npm ci
 npm run validate
 npm run check
 npm test
+npm run smoke
 ```
