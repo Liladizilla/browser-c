@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import electronPath from "electron";
 
-const startupWindowMs = 20_000;
+const startupWindowMs = 8_000;
 const child = spawn(electronPath, ["--no-sandbox", "."], {
   stdio: ["ignore", "pipe", "pipe"],
   env: { ...process.env, BROWSER_C_SMOKE: "1" }
