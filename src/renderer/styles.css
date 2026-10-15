@@ -81,6 +81,9 @@ body.private-mode .security-mark { color: #b69be0; }
   .library-controls button { font-size: 10px; padding-inline: 5px; }
   .search-provider-label { display: none; }
   #search-provider { flex: 0 1 76px; width: 76px; min-width: 64px; }
+  /* The disabled site-access control has no useful narrow-screen action. */
+  #clear-site-permissions { display: none; }
+  .tools-menu summary { padding-inline: 6px; }
 }
 
 /* Frameless-window controls: the app owns these buttons on every desktop platform. */
