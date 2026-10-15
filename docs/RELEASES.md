@@ -8,7 +8,7 @@ The `Desktop packages` workflow runs when a `v*` tag is pushed or when manually 
 - Windows: NSIS installer
 - macOS: DMG and ZIP
 
-Each platform job uses the committed npm lockfile with `npm ci`, runs repository validation, syntax checks, and automated tests, then builds packages with Electron Builder. The workflow generates a `SHA256SUMS.txt` manifest for the files in that platform's `release/` directory and uploads the packages plus manifest as a workflow artifact. Workflow artifacts are retained for 14 days and are not the same as a published GitHub Release.
+Each platform job uses the committed npm lockfile with `npm ci`, runs repository validation, syntax checks, and automated tests, then builds packages with Electron Builder. The workflow generates a `SHA256SUMS.txt` manifest and validates that the expected platform package formats exist and that every artifact is listed exactly once with a matching SHA-256 digest before uploading the packages plus manifest as a workflow artifact. Workflow artifacts are retained for 14 days and are not the same as a published GitHub Release.
 
 ## Verify downloaded artifacts
 
@@ -30,7 +30,7 @@ Use the actual filename produced by the workflow. A checksum detects accidental 
 
 - Workflow artifacts are build outputs for testing, not stable public releases.
 - The Linux Electron startup smoke test checks that the application stays alive during startup under Xvfb. It is not a full navigation, download, or private-session end-to-end test.
-- macOS signing/notarization, Windows code signing, signed provenance/attestations, SBOM publication, clean-install/upgrade testing, and runtime smoke tests on each target OS remain future release gates.
+- macOS signing/notarization, Windows code signing, signed provenance/attestations, SBOM publication, clean-install/upgrade testing, and installed-app launch/navigation smoke tests on Windows and macOS remain future release gates. Artifact validation confirms package presence and file integrity, not successful installation or runtime behavior.
 - Do not advertise an artifact as a stable release until platform launch and security checks are complete.
 
 ## Local checks

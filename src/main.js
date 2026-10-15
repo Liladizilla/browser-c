@@ -502,6 +502,11 @@ function createWindow() {
         const fixtureServer = createServer((request, response) => {
           const route = new URL(request.url || "/", "http://127.0.0.1").pathname;
           fixtureHits.set(route, (fixtureHits.get(route) || 0) + 1);
+          if (route === "/redirect-chain") {
+            response.writeHead(302, { location: "/redirect" });
+            response.end();
+            return;
+          }
           if (route === "/redirect") {
             response.writeHead(302, { location: "/redirected" });
             response.end();
@@ -606,23 +611,75 @@ function createWindow() {
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "second page after redirect");
           const redirectIntegration = { redirectFollowed, finalUrl: fixtureTab.view.webContents.getURL() };
           if (!redirectIntegration.redirectFollowed) throw new Error("Redirect integration assertion failed: " + JSON.stringify(redirectIntegration));
+          await navigate(fixtureOrigin + "/redirect-chain", fixtureTab.id);
+          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/redirected") && !fixtureTab.loading,
+            "multi-hop redirect destination");
+          redirectIntegration.multiHopRedirectFollowed = fixtureTab.view.webContents.getURL().endsWith("/redirected");
+          if (!redirectIntegration.multiHopRedirectFollowed) {
+            throw new Error("Multi-hop redirect assertion failed: " + JSON.stringify(redirectIntegration));
+          }
           console.log("BROWSER_C_REDIRECT_SMOKE_PASS " + JSON.stringify(redirectIntegration));
           const privateFixtureSnapshot = createTab(fixtureOrigin + "/private-secret", true);
           const privateFixtureTab = tabs.find((tab) => tab.id === privateFixtureSnapshot.id);
           await waitForFixture(() => (fixtureHits.get("/private-secret") || 0) > 0 && privateFixtureTab.view.webContents.getTitle() === "private-secret" && !privateFixtureTab.loading, "private fixture page committed");
           const regularSession = fixtureTab.view.webContents.session;
           const privateSession = privateFixtureTab.view.webContents.session;
+          await regularSession.cookies.set({ url: fixtureOrigin, name: "regular-only", value: "regular-secret" });
+          await fixtureTab.view.webContents.executeJavaScript('localStorage.setItem("regular-only", "regular-secret")');
+          const regularCookie = (await regularSession.cookies.get({ url: fixtureOrigin })).some((cookie) =>
+            cookie.name === "regular-only" && cookie.value === "regular-secret");
+          const privateCookiesBefore = await privateSession.cookies.get({ url: fixtureOrigin });
+          const privateStorageBefore = await privateFixtureTab.view.webContents.executeJavaScript(
+            'localStorage.getItem("regular-only")'
+          );
+          await privateSession.cookies.set({ url: fixtureOrigin, name: "private-only", value: "private-secret" });
+          await privateFixtureTab.view.webContents.executeJavaScript('localStorage.setItem("private-only", "private-secret")');
+          const privateCookieWasIsolated = !privateCookiesBefore.some((cookie) => cookie.name === "regular-only");
+          const privateStorageWasIsolated = privateStorageBefore === null;
           const privateSessionIsolation = {
             separateSession: privateSession !== regularSession,
             nonPersistentSession: !privateSession.isPersistent(),
             excludedFromSession: !persistableTabs(tabs, isWebUrl).some((tab) => tab.id === privateFixtureTab.id),
-            excludedFromHistory: !shouldRecordHistory(privateFixtureTab, isWebUrl)
+            excludedFromHistory: !shouldRecordHistory(privateFixtureTab, isWebUrl),
+            regularCookiePresent: regularCookie,
+            privateCookieIsolation: privateCookieWasIsolated,
+            privateStorageIsolation: privateStorageWasIsolated
           };
           if (Object.values(privateSessionIsolation).some((passed) => !passed)) {
             throw new Error("Private session isolation assertions failed: " + JSON.stringify(privateSessionIsolation));
           }
-          console.log("BROWSER_C_PRIVATE_SESSION_ISOLATION_PASS " + JSON.stringify(privateSessionIsolation));
           closeTab(privateFixtureTab.id);
+          let privateCookiesAfterClose = await privateSession.cookies.get({ url: fixtureOrigin });
+          for (let attempt = 0; attempt < 50 && privateCookiesAfterClose.some((cookie) => cookie.name === "private-only"); attempt++) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            privateCookiesAfterClose = await privateSession.cookies.get({ url: fixtureOrigin });
+          }
+          const regularCookieSurvivesPrivateClose = (await regularSession.cookies.get({ url: fixtureOrigin }))
+            .some((cookie) => cookie.name === "regular-only" && cookie.value === "regular-secret");
+          privateSessionIsolation.privateCookiesClearedOnClose = !privateCookiesAfterClose.some((cookie) => cookie.name === "private-only");
+          privateSessionIsolation.regularCookieSurvivesPrivateClose = regularCookieSurvivesPrivateClose;
+          if (!privateSessionIsolation.privateCookiesClearedOnClose || !regularCookieSurvivesPrivateClose) {
+            throw new Error("Private-session cleanup assertions failed: " + JSON.stringify(privateSessionIsolation));
+          }
+          console.log("BROWSER_C_PRIVATE_SESSION_ISOLATION_PASS " + JSON.stringify(privateSessionIsolation));
+          const backgroundTabSnapshot = createTab(fixtureOrigin + "/two");
+          const backgroundTab = tabs.find((tab) => tab.id === backgroundTabSnapshot.id);
+          await waitForFixture(() => backgroundTab.view.webContents.getTitle() === "two" && !backgroundTab.loading,
+            "background isolation fixture");
+          activateTab(fixtureTab.id);
+          const foregroundId = activeTabId;
+          await navigate(fixtureOrigin + "/fail", backgroundTab.id).catch(() => {});
+          await waitForFixture(() => !backgroundTab.loading && Boolean(backgroundTab.error), "background navigation failure");
+          const backgroundErrorIsolation = {
+            foregroundRemainsActive: activeTabId === foregroundId,
+            foregroundErrorUnaffected: !fixtureTab.error,
+            backgroundErrorRecorded: Boolean(backgroundTab.error)
+          };
+          if (Object.values(backgroundErrorIsolation).some((passed) => !passed)) {
+            throw new Error("Background navigation error isolation failed: " + JSON.stringify(backgroundErrorIsolation));
+          }
+          console.log("BROWSER_C_BACKGROUND_ERROR_ISOLATION_PASS " + JSON.stringify(backgroundErrorIsolation));
+          closeTab(backgroundTab.id);
         } finally {
           closeTab(fixtureTab.id);
           await new Promise((resolve) => fixtureServer.close(resolve));
