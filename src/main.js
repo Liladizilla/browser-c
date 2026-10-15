@@ -310,7 +310,14 @@ ipcMain.handle("browser:find:next", (_event, query) => {
   const tab = activeTab();
   const value = String(query ?? "").slice(0, 500);
   if (!tab || !value.trim()) return { ok: false, error: "Enter text to find." };
-  tab.view.webContents.findInPage(value, { matchCase: false, findNext: true });
+  tab.view.webContents.findInPage(value, { matchCase: false, findNext: true, forward: true });
+  return { ok: true };
+});
+ipcMain.handle("browser:find:previous", (_event, query) => {
+  const tab = activeTab();
+  const value = String(query ?? "").slice(0, 500);
+  if (!tab || !value.trim()) return { ok: false, error: "Enter text to find." };
+  tab.view.webContents.findInPage(value, { matchCase: false, findNext: true, forward: false });
   return { ok: true };
 });
 ipcMain.handle("browser:find:stop", () => {
@@ -326,7 +333,7 @@ ipcMain.handle("browser:get-state", () => {
   const tab = activeTab();
   return { tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C",
     canGoBack: Boolean(tab && tab.view.webContents.canGoBack()), canGoForward: Boolean(tab && tab.view.webContents.canGoForward()),
-    loading: Boolean(tab?.loading) };
+    loading: Boolean(tab?.loading), zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1 };
 });
 ipcMain.handle("browser:bookmarks:get", () => profile.bookmarks);
 ipcMain.handle("browser:bookmarks:toggle", async (_event, item) => {
