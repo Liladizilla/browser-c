@@ -189,3 +189,14 @@ test("Escape relayed from web content closes library and restores focus", async 
   assert.equal(h.elements.get("#library-panel").hidden, true);
   assert.equal(trigger.focused, true);
 });
+
+
+test("page tools invoke PDF export, screenshot capture, and translation actions", async () => {
+  const h = createHarness();
+  await h.elements.get("#save-page-pdf").fire("click");
+  await h.elements.get("#capture-screenshot").fire("click");
+  await h.elements.get("#translate-page").fire("click");
+  assert.ok(h.apiCalls.some((call) => call.name === "savePageAsPdf"));
+  assert.ok(h.apiCalls.some((call) => call.name === "captureScreenshot"));
+  assert.ok(h.apiCalls.some((call) => call.name === "translatePage"));
+});
