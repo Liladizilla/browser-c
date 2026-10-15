@@ -38,7 +38,7 @@ function renderTabs(tabs = []) {
     const select = document.createElement("button");
     select.className = "tab-select";
     select.type = "button";
-    select.dataset.tabId = String(tab.id);
+    select.setAttribute("data-tab-id", String(tab.id));
     select.title = (tab.isPrivate ? "Private tab · " : "") + (tab.url || "New Tab");
     select.setAttribute("role", "tab");
     select.setAttribute("aria-selected", String(tab.active));
