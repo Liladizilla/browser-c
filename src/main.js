@@ -433,6 +433,7 @@ function createWindow() {
             && getComputedStyle(findBar).position === "absolute"
             && findBar.getBoundingClientRect().top < document.querySelector(".toolbar").getBoundingClientRect().bottom;
           document.querySelector("#find-close").click();
+          privateSelect.focus();
           privateSelect.dispatchEvent(new KeyboardEvent("keydown", {
             key: "ArrowLeft", bubbles: true, cancelable: true
           }));
