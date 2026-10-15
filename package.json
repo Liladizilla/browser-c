@@ -37,6 +37,7 @@
     "publish": null,
     "linux": {
       "category": "Network;WebBrowser",
+      "maintainer": "Liladizilla <151440626+Liladizilla@users.noreply.github.com>",
       "target": [
         "AppImage",
         "deb"
