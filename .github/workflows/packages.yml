@@ -47,6 +47,9 @@ jobs:
         run: npm test
       - name: Build platform packages
         run: npx --yes electron-builder@26.0.12 ${{ matrix.args }}
+      - name: Generate SHA-256 checksums
+        run: npm run checksums
+
       - name: Upload package artifacts
         uses: actions/upload-artifact@v6
         with:
