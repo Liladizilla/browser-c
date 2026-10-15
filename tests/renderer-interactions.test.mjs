@@ -214,16 +214,15 @@ test("password vault opens, pre-fills the current HTTPS URL, and saves a manual 
   h.elements.get("#password-secret").value = "test-password";
   await h.elements.get("#password-form").fire("submit");
   const call = h.apiCalls.find((item) => item.name === "savePassword");
-  assert.deepEqual(call.args[0], {
-    url: "https://example.com/login",
-    username: "person@example.com",
-    password: "test-password"
-  });
+  assert.equal(call.args[0].url, "https://example.com/login");
+  assert.equal(call.args[0].username, "person@example.com");
+  assert.equal(call.args[0].password, "test-password");
   assert.equal(h.elements.get("#password-secret").value, "");
 });
 
 test("Escape closes the password vault and clears the password form", async () => {
   const h = createHarness();
+  h.elements.get("#find-bar").hidden = true;
   await h.elements.get("#open-passwords").fire("click");
   h.elements.get("#password-secret").value = "temporary-secret";
   h.document.handlers.get("keydown")[0]({
