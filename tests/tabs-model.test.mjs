@@ -62,3 +62,18 @@ test("content view layout accounts for the expanded browser toolbar", () => {
 test("unsupported session versions fall back to a valid empty session model", () => {
   assert.match(main, /data\.version !== SESSION_VERSION[^\n]+return \{ urls: \[\], activeIndex: 0 \}/);
 });
+
+test("downloads use explicit save-location prompts and narrow IPC controls", () => {
+  assert.match(main, /will-download/);
+  assert.match(main, /showSaveDialog/);
+  assert.match(main, /item\.setSavePath/);
+  assert.match(main, /browser:downloads:cancel/);
+  assert.match(preload, /getDownloads/);
+  assert.match(preload, /onDownloads/);
+  assert.match(preload, /cancelDownload/);
+});
+test("download panel displays progress and supports cancellation", () => {
+  assert.match(renderer, /formatBytes/);
+  assert.match(renderer, /mode === "downloads"/);
+  assert.match(renderer, /cancelDownload/);
+});
