@@ -1,12 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
-const validator = new URL("../scripts/validate-release.mjs", import.meta.url);
+const validator = fileURLToPath(new URL("../scripts/validate-release.mjs", import.meta.url));
 
 async function runValidator(platform, artifactNames, manifestFactory) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "browser-c-release-validation-"));
@@ -21,7 +22,7 @@ async function runValidator(platform, artifactNames, manifestFactory) {
       ? manifestFactory(hashes)
       : [...hashes].map(([name, hash]) => `${hash}  ${name}`).join("\n") + "\n";
     await writeFile(path.join(directory, "SHA256SUMS.txt"), manifest);
-    return spawnSync(process.execPath, [validator.pathname, platform, directory], { encoding: "utf8" });
+    return spawnSync(process.execPath, [validator, platform, directory], { encoding: "utf8" });
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
