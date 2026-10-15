@@ -338,6 +338,13 @@ function attachTabEvents(tab) {
       if (tab.id === activeTabId) sendState({ error: tab.error, url: validatedURL });
     }
   });
+  contents.on("render-process-gone", (_event, details) => {
+    if (!tabs.some((item) => item.id === tab.id)) return;
+    tab.loading = false;
+    const reason = String(details?.reason || "unknown");
+    tab.error = "The page renderer stopped unexpectedly (" + reason + "). Reload this tab to recover.";
+    if (tab.id === activeTabId) sendState({ error: tab.error, url: tab.url });
+  });
   contents.on("before-input-event", (event, input) => {
     if (input.type !== "keyDown") return;
     if (input.key === "Escape") { windowRef?.webContents.send("browser:escape"); return; }
