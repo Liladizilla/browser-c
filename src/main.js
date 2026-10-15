@@ -304,13 +304,17 @@ function attachTabEvents(tab) {
     }
   });
   contents.on("before-input-event", (event, input) => {
-    if (input.type !== "keyDown" || !(input.control || input.meta)) return;
+    if (input.type !== "keyDown") return;
+    if (input.key === "Escape") { windowRef?.webContents.send("browser:escape"); return; }
+    if (!(input.control || input.meta)) return;
     const key = String(input.key || "").toLowerCase();
     if (key === "n" && input.shift) { event.preventDefault(); createTab("https://www.google.com/", true); }
     else if (key === "t") { event.preventDefault(); createTab(); }
     else if (key === "w") { event.preventDefault(); closeTab(tab.id); }
     else if (key === "l") { event.preventDefault(); windowRef?.webContents.send("browser:focus-address"); }
     else if (key === "f") { event.preventDefault(); windowRef?.webContents.send("browser:find:open"); }
+    else if (key === "j") { event.preventDefault(); windowRef?.webContents.send("browser:library:open", "downloads"); }
+    else if (key === "h") { event.preventDefault(); windowRef?.webContents.send("browser:library:open", "history"); }
     else if (key === "+" || key === "=") { event.preventDefault(); changeZoom("in", tab.id); }
     else if (key === "-") { event.preventDefault(); changeZoom("out", tab.id); }
     else if (key === "0") { event.preventDefault(); changeZoom("reset", tab.id); }

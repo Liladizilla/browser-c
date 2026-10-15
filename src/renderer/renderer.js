@@ -229,16 +229,26 @@ clearHistory.addEventListener("click", async () => {
 
 api.onFocusAddress(() => { address.focus(); address.select(); });
 api.onFindOpen(openFindBar);
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !findBar.hidden) {
+api.onLibraryOpen((mode) => {
+  if (mode === "downloads") showLibrary("downloads", showDownloads);
+  else if (mode === "history") showLibrary("history", showHistory);
+});
+function handleEscape(event) {
+  if (!findBar.hidden) {
     event.preventDefault();
     findBar.hidden = true;
     api.stopFind();
     return;
   }
-  if (event.key === "Escape" && !libraryPanel.hidden) {
+  if (!libraryPanel.hidden) {
     event.preventDefault();
     closeLibraryPanel();
+  }
+}
+api.onEscape(() => handleEscape({ preventDefault() {} }));
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    handleEscape(event);
     return;
   }
   const modifier = event.ctrlKey || event.metaKey;

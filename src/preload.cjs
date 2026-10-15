@@ -41,6 +41,18 @@ contextBridge.exposeInMainWorld("browserC", Object.freeze({
     ipcRenderer.on("browser:find:open", listener);
     return () => ipcRenderer.removeListener("browser:find:open", listener);
   },
+  onLibraryOpen: (callback) => {
+    if (typeof callback !== "function") return () => {};
+    const listener = (_event, mode) => callback(mode);
+    ipcRenderer.on("browser:library:open", listener);
+    return () => ipcRenderer.removeListener("browser:library:open", listener);
+  },
+  onEscape: (callback) => {
+    if (typeof callback !== "function") return () => {};
+    const listener = () => callback();
+    ipcRenderer.on("browser:escape", listener);
+    return () => ipcRenderer.removeListener("browser:escape", listener);
+  },
   onState: (callback) => {
     if (typeof callback !== "function") return () => {};
     const listener = (_event, state) => callback(state);
