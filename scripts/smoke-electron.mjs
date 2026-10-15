@@ -40,7 +40,8 @@ assert.ok(uiSmokePassed, "Electron should render the browser chrome and pass UI 
 assert.ok(navigationSmokePassed, "Electron should pass back/forward/reload/stop integration checks.\n" + output.slice(-6000));
 assert.ok(navigationRecoveryPassed, "Electron should show failed-navigation feedback and clear it after recovery.\n" + output.slice(-6000));
 assert.ok(redirectSmokePassed, "Electron should follow redirects to their final destination.\n" + output.slice(-6000));
-assert.ok(privateSessionIsolationPassed, "Electron should prove private session isolation and persistence exclusions.\n" + output.slice(-6000));
+assert.ok(privateSessionIsolationPassed, "Electron should prove private session isolation, storage cleanup, and persistence exclusions.\n" + output.slice(-6000));
+assert.ok(backgroundErrorIsolationPassed, "Navigation errors in an inactive tab should not overwrite the active tab state.\n" + output.slice(-6000));
 const shutdown = await Promise.race([
   exitResult,
   new Promise((resolve) => setTimeout(() => resolve("timeout"), 3_000))
