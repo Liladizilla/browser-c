@@ -108,3 +108,29 @@ test("release collector clears stale staged files before copying current package
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("release validator rejects unexpected files in the staged artifact directory", async () => {
+  const result = await runValidator("linux", ["Browser-C.AppImage", "Browser-C.deb", "debug.log"]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Unexpected release artifact type: debug\.log/);
+});
+
+test("release validator rejects zero-byte package artifacts", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "browser-c-release-empty-"));
+  try {
+    await writeFile(path.join(directory, "Browser-C.AppImage"), "");
+    await writeFile(path.join(directory, "Browser-C.deb"), "deb");
+    const hashes = new Map();
+    for (const name of ["Browser-C.AppImage", "Browser-C.deb"]) {
+      const bytes = await import("node:fs/promises").then((fs) => fs.readFile(path.join(directory, name)));
+      hashes.set(name, createHash("sha256").update(bytes).digest("hex"));
+    }
+    await writeFile(path.join(directory, "SHA256SUMS.txt"),
+      [...hashes].map(([name, hash]) => `${hash}  ${name}`).join("\\n") + "\\n");
+    const result = spawnSync(process.execPath, [validator, "linux", directory], { encoding: "utf8" });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Package artifact is empty: Browser-C\.AppImage/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
