@@ -1045,13 +1045,18 @@ ipcMain.handle("browser:passwords:save", async (event, input) => {
   const password = String(input.password ?? "");
   if (!username || username.length > 256 || !password || password.length > 4096) return { ok: false, error: "Username is required (up to 256 characters) and password must be 1–4096 characters." };
   const existing = passwordVault.findIndex((item) => item.origin === origin && item.username === username);
-  const entry = { id: existing >= 0 ? passwordVault[existing].id : randomUUID(), origin, username, password,
-    createdAt: existing >= 0 ? passwordVault[existing].createdAt : new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const previous = existing >= 0 ? passwordVault[existing] : null;
+  const previousVault = passwordVault.slice();
+  const entry = { id: existing >= 0 ? previous.id : randomUUID(), origin, username, password,
+    createdAt: existing >= 0 ? previous.createdAt : new Date().toISOString(), updatedAt: new Date().toISOString() };
   if (existing >= 0) passwordVault[existing] = entry;
   else passwordVault.unshift(entry);
   passwordVault = passwordVault.slice(0, MAX_PASSWORDS);
   try { await persistPasswordVault(); return { ok: true, ...passwordVaultSummary() }; }
-  catch (error) { return { ok: false, error: error instanceof Error ? error.message : "Could not save password securely." }; }
+  catch (error) {
+    passwordVault = previousVault;
+    return { ok: false, error: error instanceof Error ? error.message : "Could not save password securely." };
+  }
 });
 ipcMain.handle("browser:passwords:reveal", (event, id) => {
   if (!isTrustedChromeEvent(event)) return { ok: false, error: "Untrusted password-vault request." };
