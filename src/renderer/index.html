@@ -25,12 +25,23 @@
         <button class="go" type="submit" aria-label="Go">↵</button>
       </form>
       <button id="home" title="Home" aria-label="Home">⌂</button>
+      <div class="zoom-controls" aria-label="Page zoom">
+        <button id="zoom-out" title="Zoom out (Ctrl+-)" aria-label="Zoom out">−</button>
+        <button id="zoom-reset" title="Reset zoom (Ctrl+0)" aria-label="Reset zoom">100%</button>
+        <button id="zoom-in" title="Zoom in (Ctrl++)" aria-label="Zoom in">+</button>
+      </div>
     </div>
     <div class="library-controls">
       <button id="bookmark-current" title="Bookmark current page" aria-label="Bookmark current page">☆ Bookmark</button>
       <button id="show-bookmarks" title="Show bookmarks">Bookmarks</button>
       <button id="show-history" title="Show browsing history">History</button>
       <button id="show-downloads" title="Show downloads">Downloads</button>
+    </div>
+    <div id="find-bar" class="find-bar" hidden>
+      <input id="find-query" type="search" aria-label="Find in page" placeholder="Find in page" maxlength="500">
+      <button id="find-previous" title="Previous match" aria-label="Previous match">↑</button>
+      <button id="find-next" title="Next match" aria-label="Next match">↓</button>
+      <button id="find-close" title="Close find bar" aria-label="Close find bar">×</button>
     </div>
     <div id="status" role="status" aria-live="polite">Starting Browser C…</div>
   </header>
