@@ -4,7 +4,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const outputPath = path.resolve(process.argv[2] ?? "release/artifacts/SBOM.spdx.json");
-const result = spawnSync("npm", ["sbom", "--sbom-format=spdx"], {
+const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+const result = spawnSync(npmCommand, ["sbom", "--sbom-format=spdx"], {
   encoding: "utf8",
   windowsHide: true,
   maxBuffer: 16 * 1024 * 1024
