@@ -18,6 +18,7 @@ let sessionSaveTimer;
 let quitAfterSessionSave = false;
 let lastSessionSnapshot = null;
 let profile = { version: PROFILE_VERSION, bookmarks: [], history: [] };
+let profileWriteQueue = Promise.resolve();
 
 const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
 function tabSnapshot(tab) {
@@ -78,11 +79,14 @@ async function readSession() {
   } catch { return { urls: [], activeIndex: 0 }; }
 }
 async function persistProfile() {
-  const file = path.join(app.getPath("userData"), "profile.json");
-  const temporary = file + ".tmp";
-  await mkdir(path.dirname(file), { recursive: true });
-  await writeFile(temporary, JSON.stringify(profile, null, 2), { mode: 0o600 });
-  await rename(temporary, file);
+  profileWriteQueue = profileWriteQueue.catch(() => {}).then(async () => {
+    const file = path.join(app.getPath("userData"), "profile.json");
+    const temporary = file + ".tmp";
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(temporary, JSON.stringify(profile, null, 2), { mode: 0o600 });
+    await rename(temporary, file);
+  });
+  return profileWriteQueue;
 }
 async function loadProfile() {
   try {
