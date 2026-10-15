@@ -30,6 +30,8 @@ jobs:
           node-version: 24
       - name: Install pinned application dependencies
         run: npm ci --no-audit --no-fund
+      - name: Audit pinned dependency tree
+        run: npm audit --audit-level=high
       - name: Validate repository
         run: npm run validate
       - name: Check application JavaScript syntax

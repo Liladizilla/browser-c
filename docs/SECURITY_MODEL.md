@@ -20,4 +20,6 @@ This is an early prototype, not a security-reviewed replacement for a mature bro
 - Do not expose generic IPC, filesystem, shell, or arbitrary JavaScript execution to the renderer.
 - Validate all renderer-to-main inputs and restrict navigation to expected schemes.
 - Keep Electron on a supported, patched stable release.
+- Run the dependency audit in CI against the lockfile; review advisories before upgrading or suppressing a finding.
+- Treat secret scanning as a guardrail, not permission to commit credentials. Revoke and rotate any exposed secret even after it is removed from history.
 - Test navigation, permission denial, popup blocking, downloads, private-data leakage, and process crashes before release.
