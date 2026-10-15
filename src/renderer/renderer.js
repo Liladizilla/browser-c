@@ -22,6 +22,13 @@ const showHistory = document.querySelector("#show-history");
 const showDownloads = document.querySelector("#show-downloads");
 const clearSitePermissions = document.querySelector("#clear-site-permissions");
 const searchProviderSelect = document.querySelector("#search-provider");
+const openSettings = document.querySelector("#open-settings");
+const settingsPanel = document.querySelector("#settings-panel");
+const closeSettings = document.querySelector("#close-settings");
+const settingsForm = document.querySelector("#settings-form");
+const themeSetting = document.querySelector("#theme-setting");
+const homepageSetting = document.querySelector("#homepage-setting");
+let lastSettingsTrigger = null;
 const libraryPanel = document.querySelector("#library-panel");
 const libraryTitle = document.querySelector("#library-title");
 const libraryList = document.querySelector("#library-list");
@@ -102,7 +109,10 @@ function applyState(state = {}) {
   bookmarkCurrent.disabled = Boolean(state.isPrivate);
   bookmarkCurrent.title = state.isPrivate ? "Bookmarks are disabled in private tabs" : "Bookmark current page";
   document.body.classList.toggle("private-mode", Boolean(state.isPrivate));
-  if (document.activeElement !== searchProviderSelect && state.searchProvider) searchProviderSelect.value = state.searchProvider;
+  if (state.searchProvider && document.activeElement !== searchProviderSelect) searchProviderSelect.value = state.searchProvider;
+  if (state.theme && document.activeElement !== themeSetting) themeSetting.value = state.theme;
+  if (state.homePage && document.activeElement !== homepageSetting) homepageSetting.value = state.homePage;
+  applyTheme(state.theme || "dark");
   const sitePermissions = Array.isArray(state.sitePermissions) ? state.sitePermissions : [];
   clearSitePermissions.disabled = sitePermissions.length === 0;
   clearSitePermissions.textContent = sitePermissions.length ? `Revoke access (${sitePermissions.length})` : "Site access";
@@ -256,6 +266,34 @@ bookmarkCurrent.addEventListener("click", async () => {
 showBookmarks.addEventListener("click", () => showLibrary("bookmarks", showBookmarks));
 showHistory.addEventListener("click", () => showLibrary("history", showHistory));
 showDownloads.addEventListener("click", () => showLibrary("downloads", showDownloads));
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = ["dark", "light", "system"].includes(theme) ? theme : "dark";
+}
+function closeSettingsPanel() {
+  settingsPanel.hidden = true;
+  openSettings.setAttribute("aria-expanded", "false");
+  lastSettingsTrigger?.focus();
+}
+openSettings.addEventListener("click", () => {
+  lastSettingsTrigger = openSettings;
+  settingsPanel.hidden = false;
+  openSettings.setAttribute("aria-expanded", "true");
+  closeSettings.focus();
+});
+closeSettings.addEventListener("click", closeSettingsPanel);
+settingsForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const provider = searchProviderSelect.value;
+  const preferences = { theme: themeSetting.value, homePage: homepageSetting.value.trim() };
+  const providerResult = await api.setSearchProvider(provider);
+  if (!providerResult?.ok) { status.textContent = providerResult?.error || "Could not save search provider."; return; }
+  const result = await api.savePreferences(preferences);
+  if (result?.ok) {
+    applyTheme(result.theme);
+    status.textContent = "Settings saved.";
+    closeSettingsPanel();
+  } else status.textContent = result?.error || "Could not save settings.";
+});
 searchProviderSelect.addEventListener("change", async () => {
   const result = await api.setSearchProvider(searchProviderSelect.value);
   if (result?.ok) status.textContent = "Search provider saved. New text searches will use " + searchProviderSelect.options[searchProviderSelect.selectedIndex].text + ".";
@@ -306,6 +344,7 @@ function handleEscape(event) {
     api.stopFind();
     return;
   }
+  if (!settingsPanel.hidden) { event.preventDefault(); closeSettingsPanel(); return; }
   if (!libraryPanel.hidden) {
     event.preventDefault();
     closeLibraryPanel();
