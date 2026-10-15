@@ -498,7 +498,7 @@ function createWindow() {
               response.writeHead(200, { "content-type": "text/html" });
               response.end("<title>Slow fixture</title><p>Delayed response</p>");
             }, 1500);
-            request.on("close", () => clearTimeout(timer));
+            response.on("close", () => clearTimeout(timer));
             return;
           }
           response.writeHead(200, { "content-type": "text/html" });
@@ -526,6 +526,8 @@ function createWindow() {
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "back navigation");
           fixtureTab.view.webContents.navigationHistory.goForward();
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "forward navigation");
+          const backForwardWorks = fixtureTab.view.webContents.getURL().endsWith("/two")
+            && (fixtureHits.get("/one") || 0) >= 2 && (fixtureHits.get("/two") || 0) >= 2;
           const previousReloadCount = fixtureHits.get("/two") || 0;
           fixtureTab.view.webContents.reload();
           await waitForFixture(() => (fixtureHits.get("/two") || 0) > previousReloadCount && !fixtureTab.loading, "reload");
@@ -535,8 +537,7 @@ function createWindow() {
           await waitForFixture(() => !fixtureTab.loading, "stop to clear loading state");
           await slowNavigation;
           const navigationIntegration = {
-            backForwardWorks: fixtureTab.view.webContents.getURL().endsWith("/slow") === false
-              && (fixtureHits.get("/one") || 0) >= 2 && (fixtureHits.get("/two") || 0) >= 2,
+            backForwardWorks,
             reloadWorks: (fixtureHits.get("/two") || 0) > previousReloadCount,
             stopClearsLoading: !fixtureTab.loading
           };
