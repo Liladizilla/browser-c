@@ -7,7 +7,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
-const validator = fileURLToPath(new URL("../scripts/validate-release.mjs", import.meta.url));\nconst collector = fileURLToPath(new URL("../scripts/collect-release-artifacts.mjs", import.meta.url));
+const validator = fileURLToPath(new URL("../scripts/validate-release.mjs", import.meta.url));
+const collector = fileURLToPath(new URL("../scripts/collect-release-artifacts.mjs", import.meta.url));
 
 async function runValidator(platform, artifactNames, manifestFactory) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "browser-c-release-validation-"));
