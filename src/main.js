@@ -504,19 +504,36 @@ function createWindow() {
             === document.querySelector(".tab:not(.private-tab) .tab-select")?.dataset?.tabId;
           privateTab.querySelector(".tab-close").click();
           await waitFor(() => !document.querySelector(".tab.private-tab"), "private tab close");
+
+          const showHistory = document.querySelector("#show-history");
+          showHistory.click();
+          const libraryPanel = document.querySelector("#library-panel");
+          await waitFor(() => !libraryPanel.hidden
+            && showHistory.getAttribute("aria-expanded") === "true"
+            && document.activeElement?.id === "close-library", "accessible library open and focus");
+          const libraryOpenSemantics = libraryPanel.getAttribute("aria-labelledby") === "library-title"
+            && document.querySelector("#show-bookmarks").getAttribute("aria-expanded") === "false"
+            && document.querySelector("#show-downloads").getAttribute("aria-expanded") === "false";
+          document.querySelector("#close-library").click();
+          const libraryCloseSemantics = libraryPanel.hidden
+            && showHistory.getAttribute("aria-expanded") === "false"
+            && document.activeElement === showHistory;
+
           return {
             privateTabLabel: privateState.tabLabel,
             bookmarkDisabled: privateState.bookmarkDisabled,
             privacyStatusClear: privateState.statusClear,
             findShortcutOpensOverlay: findOverlay,
             keyboardTabNavigationWorks,
-            privateTabCloses: !document.querySelector(".tab.private-tab")
+            privateTabCloses: !document.querySelector(".tab.private-tab"),
+            libraryOpenSemantics,
+            libraryCloseSemantics
           };
         })()`);
         if (!interactions.privateTabLabel?.startsWith("Private tab:")
           || !interactions.bookmarkDisabled || !interactions.privacyStatusClear
           || !interactions.findShortcutOpensOverlay || !interactions.keyboardTabNavigationWorks
-          || !interactions.privateTabCloses) {
+          || !interactions.privateTabCloses || !interactions.libraryOpenSemantics || !interactions.libraryCloseSemantics) {
           throw new Error("UI interaction assertions failed: " + JSON.stringify(interactions));
         }
         windowRef.setSize(520, 840);
