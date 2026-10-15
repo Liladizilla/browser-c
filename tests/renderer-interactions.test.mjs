@@ -145,3 +145,26 @@ test("find-in-page Enter advances matches and Escape clears the search", async (
   assert.equal(bar.hidden, true);
   assert.ok(h.apiCalls.some((call) => call.name === "stopFind"));
 });
+
+
+test("Ctrl+J and Ctrl+H open downloads and history panels", async () => {
+  const h = createHarness();
+  const handlers = h.document.handlers.get("keydown");
+  await handlers[0]({ key: "j", ctrlKey: true, metaKey: false, shiftKey: false, preventDefault() { this.prevented = true; } });
+  assert.equal(h.elements.get("#library-panel").hidden, false);
+  assert.equal(h.elements.get("#library-title").textContent, "Downloads");
+  await handlers[0]({ key: "h", ctrlKey: true, metaKey: false, shiftKey: false, preventDefault() { this.prevented = true; } });
+  assert.equal(h.elements.get("#library-title").textContent, "History");
+});
+
+test("Escape closes the library panel and restores focus to its trigger", async () => {
+  const h = createHarness();
+  h.elements.get("#find-bar").hidden = true;
+  const trigger = h.elements.get("#show-history");
+  await trigger.fire("click");
+  const event = { key: "Escape", ctrlKey: false, metaKey: false, preventDefault() { this.prevented = true; } };
+  h.document.handlers.get("keydown")[0](event);
+  assert.equal(h.elements.get("#library-panel").hidden, true);
+  assert.equal(trigger.focused, true);
+  assert.equal(event.prevented, true);
+});
