@@ -127,3 +127,9 @@ test("release validator rejects zero-byte package artifacts", async () => {
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("release validator rejects a package built for another platform", async () => {
+  const result = await runValidator("linux", ["Browser-C.AppImage", "Browser-C.deb", "Browser-C.exe"]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Unexpected release artifact type: Browser-C\.exe/);
+});
