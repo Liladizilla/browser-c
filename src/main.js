@@ -537,7 +537,7 @@ function createWindow() {
           throw new Error("Timed out waiting for navigation fixture: " + label);
         };
         try {
-          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "first page");
+          await waitForFixture(() => (fixtureHits.get("/one") || 0) > 0 && fixtureTab.view.webContents.getTitle() === "one" && !fixtureTab.loading, "first page committed");
           await navigate(fixtureOrigin + "/two", fixtureTab.id);
           await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "second page");
           const waitForNavigationEvent = (targetPath, trigger) => new Promise((resolve, reject) => {
@@ -609,7 +609,7 @@ function createWindow() {
           console.log("BROWSER_C_REDIRECT_SMOKE_PASS " + JSON.stringify(redirectIntegration));
           const privateFixtureSnapshot = createTab(fixtureOrigin + "/private-secret", true);
           const privateFixtureTab = tabs.find((tab) => tab.id === privateFixtureSnapshot.id);
-          await waitForFixture(() => privateFixtureTab.view.webContents.getURL().endsWith("/private-secret") && !privateFixtureTab.loading, "private fixture page");
+          await waitForFixture(() => (fixtureHits.get("/private-secret") || 0) > 0 && privateFixtureTab.view.webContents.getTitle() === "private-secret" && !privateFixtureTab.loading, "private fixture page committed");
           const regularSession = fixtureTab.view.webContents.session;
           const privateSession = privateFixtureTab.view.webContents.session;
           const privateSessionIsolation = {
