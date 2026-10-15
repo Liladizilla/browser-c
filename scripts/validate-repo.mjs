@@ -5,7 +5,7 @@ const requiredFiles = [
   'README.md', 'LICENSE', 'CONTRIBUTING.md', 'SECURITY.md',
   'docs/ARCHITECTURE.md', 'docs/ROADMAP.md', 'docs/SECURITY_MODEL.md', 'docs/RELEASES.md',
   '.github/workflows/ci.yml', '.github/workflows/codeql.yml', '.github/workflows/packages.yml', '.github/workflows/secrets.yml', 'package.json', 'package-lock.json', 'src/main.js', 'src/preload.cjs',
-  'src/navigation.js', 'src/privacy-policy.js', 'src/renderer/index.html', 'src/renderer/styles.css',
+  'scripts/collect-release-artifacts.mjs', 'scripts/validate-release.mjs', 'scripts/write-checksums.mjs', 'tests/release-validation.test.mjs',\n  'src/navigation.js', 'src/privacy-policy.js', 'src/renderer/index.html', 'src/renderer/styles.css',
   'src/renderer/renderer.js', 'tests/navigation.test.mjs', 'tests/security-model.test.mjs', 'tests/security-workflows.test.mjs', 'tests/tabs-model.test.mjs', 'tests/privacy-policy.test.mjs', 'tests/renderer-ui.test.mjs', 'tests/renderer-interactions.test.mjs'
 ];
 const failures = [];
