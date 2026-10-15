@@ -31,7 +31,8 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Preserve the selected tab and save sessions when windows close.
 - [x] Bookmarks, browsing history, persistent profile storage, and clear-history controls.
 - [ ] Search-provider settings.
-- [ ] Downloads UI, destination handling, cancellation, and safe-file handling.
+- [x] Download list, explicit save-location prompt, progress display, and cancellation.
+- [ ] Safe-file handling and completed-download actions.
 - [ ] Permission prompts for camera, microphone, geolocation, notifications, and other exposed APIs.
 - [ ] Find in page, zoom, print, devtools access, and accessibility review.
 - [ ] Private windows with isolated non-persistent sessions and leakage tests.
