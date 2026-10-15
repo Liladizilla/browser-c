@@ -51,7 +51,7 @@ test("bookmarks and history use narrow IPC endpoints and persistent profile stor
 });
 
 test("history records only web URLs and remains bounded", () => {
-  assert.match(main, /if \(!isWebUrl\(tab\.url\)\) return/);
+  assert.match(main, /if \(tab\.isPrivate \|\| !isWebUrl\(tab\.url\)\) return/);
   assert.match(main, /MAX_HISTORY_ITEMS/);
   assert.match(main, /recordHistory\(tab\)/);
 });
