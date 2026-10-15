@@ -9,6 +9,7 @@ const newTab = document.querySelector("#new-tab");
 const newPrivateTab = document.querySelector("#new-private-tab");
 const tabsNode = document.querySelector("#tabs");
 const status = document.querySelector("#status");
+const retryNavigation = document.querySelector("#retry-navigation");
 const bookmarkCurrent = document.querySelector("#bookmark-current");
 const showBookmarks = document.querySelector("#show-bookmarks");
 const showHistory = document.querySelector("#show-history");
@@ -82,6 +83,8 @@ function applyState(state = {}) {
   reload.title = state.loading ? "Stop loading" : "Reload";
   reload.setAttribute("aria-label", reload.title);
   status.textContent = (state.isPrivate ? "Private session · history and tabs are not saved · " : "") + (state.error ? "Load error: " + state.error : state.loading ? "Loading…" : state.title || "Ready");
+  retryNavigation.hidden = !state.error;
+  retryNavigation.disabled = Boolean(state.loading);
   bookmarkCurrent.disabled = Boolean(state.isPrivate);
   bookmarkCurrent.title = state.isPrivate ? "Bookmarks are disabled in private tabs" : "Bookmark current page";
   document.body.classList.toggle("private-mode", Boolean(state.isPrivate));
@@ -97,6 +100,7 @@ form.addEventListener("submit", async (event) => {
 });
 back.addEventListener("click", () => api.back());
 forward.addEventListener("click", () => api.forward());
+retryNavigation.addEventListener("click", () => api.reload());
 reload.addEventListener("click", async () => {
   const state = await api.getState();
   if (state.loading) await api.stop(); else await api.reload();
