@@ -489,6 +489,65 @@ function createWindow() {
           throw new Error("Responsive layout overflow at 520px: " + JSON.stringify(narrowLayout));
         }
         windowRef.setSize(1280, 840);
+        const fixtureHits = new Map();
+        const fixtureServer = createServer((request, response) => {
+          const route = new URL(request.url || "/", "http://127.0.0.1").pathname;
+          fixtureHits.set(route, (fixtureHits.get(route) || 0) + 1);
+          if (route === "/slow") {
+            const timer = setTimeout(() => {
+              response.writeHead(200, { "content-type": "text/html" });
+              response.end("<title>Slow fixture</title><p>Delayed response</p>");
+            }, 1500);
+            request.on("close", () => clearTimeout(timer));
+            return;
+          }
+          response.writeHead(200, { "content-type": "text/html" });
+          response.end("<!doctype html><title>" + route.slice(1) + "</title><p>Navigation fixture: " + route + "</p>");
+        });
+        await new Promise((resolve, reject) => {
+          fixtureServer.once("error", reject);
+          fixtureServer.listen(0, "127.0.0.1", resolve);
+        });
+        const fixtureOrigin = "http://127.0.0.1:" + fixtureServer.address().port;
+        const fixtureTabSnapshot = createTab(fixtureOrigin + "/one");
+        const fixtureTab = tabs.find((tab) => tab.id === fixtureTabSnapshot.id);
+        const waitForFixture = async (predicate, label) => {
+          for (let attempt = 0; attempt < 50; attempt++) {
+            if (predicate()) return;
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+          throw new Error("Timed out waiting for navigation fixture: " + label);
+        };
+        try {
+          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "first page");
+          await navigate(fixtureOrigin + "/two", fixtureTab.id);
+          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "second page");
+          fixtureTab.view.webContents.navigationHistory.goBack();
+          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "back navigation");
+          fixtureTab.view.webContents.navigationHistory.goForward();
+          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/two") && !fixtureTab.loading, "forward navigation");
+          const previousReloadCount = fixtureHits.get("/two") || 0;
+          fixtureTab.view.webContents.reload();
+          await waitForFixture(() => (fixtureHits.get("/two") || 0) > previousReloadCount && !fixtureTab.loading, "reload");
+          const slowNavigation = navigate(fixtureOrigin + "/slow", fixtureTab.id).catch(() => {});
+          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/slow") && fixtureTab.loading, "slow navigation start");
+          fixtureTab.view.webContents.stop();
+          await waitForFixture(() => !fixtureTab.loading, "stop to clear loading state");
+          await slowNavigation;
+          const navigationIntegration = {
+            backForwardWorks: fixtureTab.view.webContents.getURL().endsWith("/slow") === false
+              && (fixtureHits.get("/one") || 0) >= 2 && (fixtureHits.get("/two") || 0) >= 2,
+            reloadWorks: (fixtureHits.get("/two") || 0) > previousReloadCount,
+            stopClearsLoading: !fixtureTab.loading
+          };
+          if (!navigationIntegration.backForwardWorks || !navigationIntegration.reloadWorks || !navigationIntegration.stopClearsLoading) {
+            throw new Error("Navigation integration assertions failed: " + JSON.stringify(navigationIntegration));
+          }
+          console.log("BROWSER_C_NAVIGATION_SMOKE_PASS " + JSON.stringify(navigationIntegration));
+        } finally {
+          closeTab(fixtureTab.id);
+          await new Promise((resolve) => fixtureServer.close(resolve));
+        }
         console.log("BROWSER_C_UI_SMOKE_PASS " + JSON.stringify({ ...result, interactions, narrowLayout }));
       } catch (error) {
         console.error("BROWSER_C_UI_SMOKE_FAIL " + (error?.stack || error));
