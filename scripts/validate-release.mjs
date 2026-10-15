@@ -17,22 +17,22 @@ const entries = await readdir(directory, { withFileTypes: true });
 const artifacts = entries.filter((entry) => entry.isFile() && entry.name !== "SHA256SUMS.txt").map((entry) => entry.name).sort();
 assert.ok(artifacts.length > 0, "Release directory contains no package artifacts");
 for (const name of artifacts) {
-  assert.ok(!/[\u0000-\u001f\u007f/\\]/.test(name), \`Unsafe artifact filename: \${JSON.stringify(name)}\`);
+  assert.ok(!/[\u0000-\u001f\u007f/\\]/.test(name), "Unsafe artifact filename: " + JSON.stringify(name));
   const details = await stat(path.join(directory, name));
-  assert.ok(details.size > 0, \`Package artifact is empty: \${name}\`);
+  assert.ok(details.size > 0, "Package artifact is empty: " + name);
 }
 for (const extension of expectedExtensions[platform]) {
   assert.ok(artifacts.some((name) => name.toLowerCase().endsWith(extension.toLowerCase())),
-    \`Expected a \${extension} package for \${platform}; found: \${artifacts.join(", ")}\`);
+    "Expected a " + extension + " package for " + platform + "; found: " + artifacts.join(", "));
 }
 
 const manifest = await readFile(path.join(directory, "SHA256SUMS.txt"), "utf8");
 const records = new Map();
 for (const line of manifest.split(/\r?\n/).filter(Boolean)) {
   const match = /^([a-f0-9]{64})  (.+)$/.exec(line);
-  assert.ok(match, \`Malformed checksum line: \${line}\`);
-  assert.ok(!/[\u0000-\u001f\u007f/\\]/.test(match[2]), \`Unsafe checksum filename: \${JSON.stringify(match[2])}\`);
-  assert.ok(!records.has(match[2]), \`Duplicate checksum entry: \${match[2]}\`);
+  assert.ok(match, "Malformed checksum line: " + line);
+  assert.ok(!/[\u0000-\u001f\u007f/\\]/.test(match[2]), "Unsafe checksum filename: " + JSON.stringify(match[2]));
+  assert.ok(!records.has(match[2]), "Duplicate checksum entry: " + match[2]);
   records.set(match[2], match[1]);
 }
 assert.deepEqual([...records.keys()].sort(), artifacts, "Checksum manifest must cover every artifact exactly once");
@@ -40,6 +40,6 @@ assert.deepEqual([...records.keys()].sort(), artifacts, "Checksum manifest must 
 for (const name of artifacts) {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(path.join(directory, name))) hash.update(chunk);
-  assert.equal(records.get(name), hash.digest("hex"), \`Checksum mismatch for \${name}\`);
+  assert.equal(records.get(name), hash.digest("hex"), "Checksum mismatch for " + name);
 }
-console.log(\`Release validation passed for \${platform}: \${artifacts.length} artifact(s), required package formats present, all SHA-256 entries verified.\`);
+console.log("Release validation passed for " + platform + ": " + artifacts.length + " artifact(s), required package formats present, all SHA-256 entries verified.");
