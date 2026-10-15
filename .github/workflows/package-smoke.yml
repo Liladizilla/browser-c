@@ -30,9 +30,11 @@ jobs:
         run: npx --yes electron-builder@26.0.12 --linux AppImage deb
       - name: Stage only distributable packages
         run: node scripts/collect-release-artifacts.mjs linux
+      - name: Generate SPDX software bill of materials
+        run: node scripts/generate-sbom.mjs release/artifacts/SBOM.spdx.json
       - name: Generate checksums
         run: npm run checksums -- release/artifacts
-      - name: Validate package types and checksums
+      - name: Validate package types, SBOM, and checksums
         run: node scripts/validate-release.mjs linux release/artifacts
       - name: Inspect Debian package metadata
         run: dpkg-deb --info release/artifacts/*.deb
@@ -55,7 +57,7 @@ jobs:
           APPDIR: ${{ github.workspace }}/release/squashfs-root
           BROWSER_C_EXECUTABLE: ${{ github.workspace }}/release/squashfs-root/AppRun
         run: xvfb-run -a node scripts/smoke-installed-linux.mjs
-      - name: Upload validated Linux packages
+      - name: Upload validated Linux packages and dependency inventory
         uses: actions/upload-artifact@v6
         with:
           name: browser-c-linux-package-smoke
