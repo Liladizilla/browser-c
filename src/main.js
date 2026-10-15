@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { isWebUrl, resolveAddress } from "./navigation.js";
 import { canBookmarkTab, persistableTabs, shouldCancelDownloadOnTabClose, shouldPersistCompletedDownload, shouldRecordHistory } from "./privacy-policy.js";
+import { downloadSafetyWarning } from "./download-policy.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CHROME_HEIGHT = 136;
@@ -201,6 +202,25 @@ function attachDownloadHandler(browserSession) {
     sendDownloads();
     try {
       if (!windowRef || windowRef.isDestroyed()) throw new Error("Browser window is unavailable.");
+      const warning = downloadSafetyWarning(download.filename);
+      if (warning) {
+        const confirmation = await dialog.showMessageBox(windowRef, {
+          type: "warning",
+          title: "Potentially unsafe download",
+          message: "This file type can run code or change system settings.",
+          detail: `File: ${download.filename}\nType: ${warning}\n\nBrowser C does not scan downloaded files. Continue only if you trust the source.`,
+          buttons: ["Cancel download", "Continue to save"],
+          defaultId: 0,
+          cancelId: 0,
+          noLink: true
+        });
+        if (confirmation.response !== 1) {
+          item.cancel();
+          download.state = "cancelled";
+          sendDownloads();
+          return;
+        }
+      }
       const result = await dialog.showSaveDialog(windowRef, { defaultPath: download.filename, title: "Save download" });
       if (result.canceled || !result.filePath) {
         item.cancel();
