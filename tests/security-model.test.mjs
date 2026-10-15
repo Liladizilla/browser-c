@@ -16,6 +16,8 @@ test("remote popups and web permissions are denied by default", () => {
   assert.match(main, /setWindowOpenHandler\(\(\) => \(\{ action: "deny" \}\)\)/);
   assert.match(main, /setPermissionRequestHandler/);
   assert.match(main, /setPermissionCheckHandler/);
+  assert.match(main, /will-redirect/);
+  assert.match(main, /chromeUrl/);
 });
 test("preload exposes a narrow bridge rather than raw IPC", () => {
   assert.match(preload, /contextBridge\.exposeInMainWorld/);
