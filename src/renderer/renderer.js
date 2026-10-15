@@ -12,6 +12,9 @@ const windowMaximize = document.querySelector("#window-maximize");
 const windowClose = document.querySelector("#window-close");
 const printPage = document.querySelector("#print-page");
 const savePageAs = document.querySelector("#save-page-as");
+const savePagePdf = document.querySelector("#save-page-pdf");
+const captureScreenshot = document.querySelector("#capture-screenshot");
+const translatePage = document.querySelector("#translate-page");
 const openDevTools = document.querySelector("#open-devtools");
 const tabsNode = document.querySelector("#tabs");
 const status = document.querySelector("#status");
@@ -156,6 +159,24 @@ savePageAs.addEventListener("click", async () => {
   const result = await api.savePageAs();
   if (result?.ok) status.textContent = "Webpage saved.";
   else if (!result?.canceled) status.textContent = result?.error || "Could not save this page.";
+});
+savePagePdf.addEventListener("click", async () => {
+  document.querySelector(".tools-menu").open = false;
+  const result = await api.savePageAsPdf();
+  if (result?.ok) status.textContent = "PDF saved.";
+  else if (!result?.canceled) status.textContent = result?.error || "Could not export this page as PDF.";
+});
+captureScreenshot.addEventListener("click", async () => {
+  document.querySelector(".tools-menu").open = false;
+  const result = await api.captureScreenshot();
+  if (result?.ok) status.textContent = "Screenshot saved.";
+  else if (!result?.canceled) status.textContent = result?.error || "Could not capture this page.";
+});
+translatePage.addEventListener("click", async () => {
+  document.querySelector(".tools-menu").open = false;
+  const result = await api.translatePage();
+  if (result?.ok) status.textContent = "Translation opened in a new tab.";
+  else if (!result?.canceled) status.textContent = result?.error || "Could not translate this page.";
 });
 openDevTools.addEventListener("click", async () => {
   document.querySelector(".tools-menu").open = false;
