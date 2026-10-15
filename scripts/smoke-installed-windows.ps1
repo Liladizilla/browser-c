@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$installDir = Join-Path $env:RUNNER_TEMP "Browser C Installed Smoke"
+$installDir = Join-Path $env:RUNNER_TEMP "BrowserCInstalledSmoke"
 $logOut = Join-Path $env:RUNNER_TEMP "browser-c-installed-smoke.stdout.log"
 $logErr = Join-Path $env:RUNNER_TEMP "browser-c-installed-smoke.stderr.log"
 
@@ -14,15 +14,19 @@ if (-not (Test-Path -LiteralPath $InstallerPath -PathType Leaf)) {
 if (Test-Path -LiteralPath $installDir) {
   Remove-Item -LiteralPath $installDir -Recurse -Force
 }
-$installer = Start-Process -FilePath $InstallerPath -ArgumentList @("/S", "/D=$installDir") -Wait -PassThru
+# NSIS requires /D= to be the final argument. Use a path without spaces to
+# avoid argument quoting differences between PowerShell and Start-Process.
+$installer = Start-Process -FilePath $InstallerPath -ArgumentList "/S /D=$installDir" -Wait -PassThru
 if ($installer.ExitCode -ne 0) {
   throw "NSIS installer failed with exit code $($installer.ExitCode)."
 }
 
-$appExe = Join-Path $installDir "Browser C.exe"
-if (-not (Test-Path -LiteralPath $appExe -PathType Leaf)) {
-  throw "Installed Browser C executable was not found at $appExe"
+$installedExe = Get-ChildItem -LiteralPath $installDir -Filter "Browser C.exe" -File -Recurse | Select-Object -First 1
+if ($null -eq $installedExe) {
+  $installedFiles = Get-ChildItem -LiteralPath $installDir -Force -Recurse | Select-Object -ExpandProperty FullName
+  throw ("Installed Browser C executable was not found under " + $installDir + ". Files found: " + ($installedFiles -join "; "))
 }
+$appExe = $installedExe.FullName
 
 $env:BROWSER_C_SMOKE = "1"
 $app = Start-Process -FilePath $appExe -PassThru -RedirectStandardOutput $logOut -RedirectStandardError $logErr
