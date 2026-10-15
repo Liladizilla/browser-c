@@ -12,6 +12,7 @@ let tabs = [];
 let activeTabId = null;
 let nextTabId = 1;
 let sessionSaveTimer;
+let quitAfterSessionSave = false;
 
 const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
 function tabSnapshot(tab) {
@@ -44,7 +45,7 @@ function scheduleSessionSave() {
 async function saveSession() {
   if (!app.isReady()) return;
   const file = path.join(app.getPath("userData"), "session.json");
-  const payload = { version: SESSION_VERSION, activeTabId,
+  const payload = { version: SESSION_VERSION, activeTabId, activeUrl: activeTab()?.url ?? "https://www.google.com/",
     tabs: tabs.map((tab) => ({ url: tab.url, title: tab.title })).filter((tab) => isWebUrl(tab.url)).slice(0, 20) };
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, JSON.stringify(payload, null, 2), { mode: 0o600 });
@@ -54,7 +55,11 @@ async function readSession() {
     const file = path.join(app.getPath("userData"), "session.json");
     const data = JSON.parse(await readFile(file, "utf8"));
     if (data.version !== SESSION_VERSION || !Array.isArray(data.tabs)) return [];
-    return data.tabs.map((tab) => tab?.url).filter((url) => typeof url === "string" && isWebUrl(url)).slice(0, 10);
+    const urls = data.tabs.map((tab) => tab?.url).filter((url) => typeof url === "string" && isWebUrl(url)).slice(0, 10);
+    if (typeof data.activeUrl === "string" && urls.includes(data.activeUrl)) {
+      return [...urls.filter((url) => url !== data.activeUrl), data.activeUrl];
+    }
+    return urls;
   } catch { return []; }
 }
 async function navigate(rawInput, tabId = activeTabId) {
@@ -168,5 +173,10 @@ app.whenReady().then(async () => {
   } else createTab();
   app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) { createWindow(); createTab(); } });
 });
-app.on("before-quit", () => { if (sessionSaveTimer) clearTimeout(sessionSaveTimer); saveSession().catch(() => {}); });
+app.on("before-quit", (event) => {
+  if (quitAfterSessionSave) return;
+  event.preventDefault();
+  if (sessionSaveTimer) clearTimeout(sessionSaveTimer);
+  saveSession().catch(() => {}).finally(() => { quitAfterSessionSave = true; app.quit(); });
+});
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
