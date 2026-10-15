@@ -43,9 +43,11 @@ let passwordVaultAvailable = false;
 let passwordVaultWriteQueue = Promise.resolve();
 const MAX_PASSWORDS = 500;
 function passwordVaultBackendAvailable() {
-  if (!safeStorage.isEncryptionAvailable()) return false;
-  try { return typeof safeStorage.getSelectedStorageBackend !== "function" || safeStorage.getSelectedStorageBackend() !== "basic_text"; }
-  catch { return false; }
+  if (!safeStorage.isEncryptionAvailable() || typeof safeStorage.getSelectedStorageBackend !== "function") return false;
+  try {
+    const backend = safeStorage.getSelectedStorageBackend();
+    return ["gnome_libsecret", "kwallet", "kwallet5", "kwallet6", "keychain", "dpapi"].includes(backend);
+  } catch { return false; }
 }
 async function loadPasswordVault() {
   passwordVaultAvailable = passwordVaultBackendAvailable();
