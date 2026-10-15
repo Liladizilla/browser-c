@@ -478,13 +478,13 @@ function createWindow() {
         const screenshotDir = process.env.BROWSER_C_SMOKE_SCREENSHOT_DIR;
         if (screenshotDir) {
           await mkdir(screenshotDir, { recursive: true });
-          const narrowImage = await windowRef.capturePage();
+          const narrowImage = await windowRef.webContents.capturePage();
           await writeFile(path.join(screenshotDir, "browser-c-ui-520.png"), narrowImage.toPNG());
         }
         windowRef.setSize(1280, 840);
         await new Promise((resolve) => setTimeout(resolve, 150));
         if (screenshotDir) {
-          const desktopImage = await windowRef.capturePage();
+          const desktopImage = await windowRef.webContents.capturePage();
           await writeFile(path.join(screenshotDir, "browser-c-ui-1280.png"), desktopImage.toPNG());
         }
         console.log("BROWSER_C_UI_SMOKE_PASS " + JSON.stringify({ ...result, interactions, narrowLayout, screenshotsCaptured: Boolean(screenshotDir) }));
