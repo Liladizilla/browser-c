@@ -75,3 +75,8 @@ test("Linux package smoke builds and inspects real distributable payloads", () =
   assert.ok(packageSmoke.includes("test -f squashfs-root/resources/app.asar"));
   assert.ok(packageSmoke.includes("if-no-files-found: error"));
 });
+
+
+test("Linux Debian package maintainer metadata is configured", () => {
+  assert.match(pkg.build.linux.maintainer, /^[^<>]+ <[^<>@\\s]+@[^<>\\s]+>$/);
+});
