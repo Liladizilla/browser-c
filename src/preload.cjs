@@ -10,6 +10,12 @@ contextBridge.exposeInMainWorld("browserC", Object.freeze({
   activateTab: (id) => ipcRenderer.invoke("browser:activate-tab", Number(id)),
   closeTab: (id) => ipcRenderer.invoke("browser:close-tab", Number(id)),
   getState: () => ipcRenderer.invoke("browser:get-state"),
+  onFocusAddress: (callback) => {
+    if (typeof callback !== "function") return () => {};
+    const listener = () => callback();
+    ipcRenderer.on("browser:focus-address", listener);
+    return () => ipcRenderer.removeListener("browser:focus-address", listener);
+  },
   onState: (callback) => {
     if (typeof callback !== "function") return () => {};
     const listener = (_event, state) => callback(state);
