@@ -2,7 +2,7 @@
 
 ## Automated packages
 
-The `Desktop packages` workflow runs when a `v*` tag is pushed or when manually dispatched from GitHub Actions. It creates platform-specific build artifacts:
+The `Linux packaged build smoke` workflow builds AppImage and Debian packages on pull requests and pushes to `main`, stages and validates checksums, inspects Debian metadata, and extracts the AppImage without FUSE to verify its launcher and packaged app payload. It uploads a short-lived CI artifact for review; this is a packaging smoke test, not an installed-app runtime test. The `Desktop packages` workflow runs when a `v*` tag is pushed or when manually dispatched from GitHub Actions. It creates platform-specific build artifacts:
 
 - Linux: AppImage and Debian package
 - Windows: NSIS installer
