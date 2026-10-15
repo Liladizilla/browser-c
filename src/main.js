@@ -405,7 +405,53 @@ function createWindow() {
         if (result.missing.length || result.toolbarHeight !== "136px" || !result.bridgeAvailable) {
           throw new Error("UI smoke assertions failed: " + JSON.stringify(result));
         }
-        console.log("BROWSER_C_UI_SMOKE_PASS " + JSON.stringify(result));
+        const interactions = await windowRef.webContents.executeJavaScript(`(async () => {
+          const waitFor = async (predicate, label) => {
+            for (let attempt = 0; attempt < 30; attempt++) {
+              if (predicate()) return;
+              await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+            throw new Error("Timed out waiting for " + label);
+          };
+          const privateButton = document.querySelector("#new-private-tab");
+          privateButton.click();
+          await waitFor(() => document.querySelector(".tab.private-tab"), "private tab to render");
+          const privateTab = document.querySelector(".tab.private-tab");
+          const privateSelect = privateTab.querySelector(".tab-select");
+          privateSelect.click();
+          await waitFor(() => document.body.classList.contains("private-mode"), "private-mode state");
+          const privateState = {
+            tabLabel: privateSelect.getAttribute("aria-label"),
+            bookmarkDisabled: document.querySelector("#bookmark-current").disabled,
+            statusClear: document.querySelector("#status").textContent.includes("history and tabs are not saved")
+          };
+          document.dispatchEvent(new KeyboardEvent("keydown", {
+            key: "f", ctrlKey: true, bubbles: true, cancelable: true
+          }));
+          const findBar = document.querySelector("#find-bar");
+          const findOverlay = !findBar.hidden
+            && getComputedStyle(findBar).position === "absolute"
+            && findBar.getBoundingClientRect().top < document.querySelector(".toolbar").getBoundingClientRect().bottom;
+          document.querySelector("#find-close").click();
+          const regularTab = [...document.querySelectorAll(".tab:not(.private-tab) .tab-select")][0];
+          if (regularTab) regularTab.click();
+          await waitFor(() => !document.body.classList.contains("private-mode"), "regular tab state");
+          privateTab.querySelector(".tab-close").click();
+          await waitFor(() => !document.querySelector(".tab.private-tab"), "private tab close");
+          return {
+            privateTabLabel: privateState.tabLabel,
+            bookmarkDisabled: privateState.bookmarkDisabled,
+            privacyStatusClear: privateState.statusClear,
+            findShortcutOpensOverlay: findOverlay,
+            privateTabCloses: !document.querySelector(".tab.private-tab")
+          };
+        })()`);
+        if (!interactions.privateTabLabel?.startsWith("Private tab:")
+          || !interactions.bookmarkDisabled || !interactions.privacyStatusClear
+          || !interactions.findShortcutOpensOverlay || !interactions.privateTabCloses) {
+          throw new Error("UI interaction assertions failed: " + JSON.stringify(interactions));
+        }
+        console.log("BROWSER_C_UI_SMOKE_PASS " + JSON.stringify({ ...result, interactions }));
       } catch (error) {
         console.error("BROWSER_C_UI_SMOKE_FAIL " + (error?.stack || error));
         app.exit(1);
