@@ -563,7 +563,9 @@ function createWindow() {
           await navigate("http://127.0.0.1:1/unreachable", fixtureTab.id).catch(() => {});
           await waitForFixture(() => Boolean(fixtureTab.error) && !fixtureTab.loading, "failed navigation error state");
           const failureFeedback = await windowRef.webContents.executeJavaScript("(() => ({ statusShowsError: document.getElementById('status').textContent.includes('Load error:'), retryVisible: !document.getElementById('retry-navigation').hidden, retryEnabled: !document.getElementById('retry-navigation').disabled }))()");
+          const retryStarted = new Promise((resolve) => fixtureTab.view.webContents.once("did-start-navigation", resolve));
           await windowRef.webContents.executeJavaScript("document.getElementById('retry-navigation').click()");
+          await retryStarted;
           await waitForFixture(() => Boolean(fixtureTab.error) && !fixtureTab.loading, "retry failure feedback");
           const retryWorks = await windowRef.webContents.executeJavaScript("!document.getElementById('retry-navigation').hidden");
           const navigationIntegration = {
