@@ -34,6 +34,7 @@ const navigationSmokePassed = /BROWSER_C_NAVIGATION_SMOKE_PASS/.test(output);
 const navigationRecoveryPassed = /BROWSER_C_NAVIGATION_ERROR_RECOVERY_PASS/.test(output);
 const redirectSmokePassed = /BROWSER_C_REDIRECT_SMOKE_PASS/.test(output);
 const privateSessionIsolationPassed = /BROWSER_C_PRIVATE_SESSION_ISOLATION_PASS/.test(output);
+const backgroundErrorIsolationPassed = /BROWSER_C_BACKGROUND_ERROR_ISOLATION_PASS/.test(output);
 child.kill("SIGTERM");
 assert.ok(uiSmokePassed, "Electron should render the browser chrome and pass UI interactions.\n" + output.slice(-6000));
 assert.ok(navigationSmokePassed, "Electron should pass back/forward/reload/stop integration checks.\n" + output.slice(-6000));
