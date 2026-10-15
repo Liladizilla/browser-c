@@ -21,6 +21,7 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const result = await api.navigate(address.value);
   if (!result || !result.ok) status.textContent = result && result.error ? result.error : "Navigation failed";
+  else { address.value = result.url; address.blur(); }
 });
 back.addEventListener("click", () => api.back());
 forward.addEventListener("click", () => api.forward());
