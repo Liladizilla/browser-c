@@ -1,5 +1,6 @@
-import { app, BrowserWindow, WebContentsView, ipcMain } from "electron";
+import { app, BrowserWindow, WebContentsView, ipcMain, dialog } from "electron";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { isWebUrl, resolveAddress } from "./navigation.js";
@@ -19,6 +20,8 @@ let quitAfterSessionSave = false;
 let lastSessionSnapshot = null;
 let profile = { version: PROFILE_VERSION, bookmarks: [], history: [] };
 let profileWriteQueue = Promise.resolve();
+const downloads = new Map();
+const downloadSessions = new WeakSet();
 
 const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
 function tabSnapshot(tab) {
@@ -117,6 +120,57 @@ async function navigate(rawInput, tabId = activeTabId) {
   scheduleSessionSave();
   return destination;
 }
+function downloadSnapshot(download) {
+  return { id: download.id, filename: download.filename, url: download.url, state: download.state,
+    receivedBytes: download.receivedBytes, totalBytes: download.totalBytes, savePath: download.savePath ?? null };
+}
+function sendDownloads() {
+  if (!windowRef || windowRef.isDestroyed()) return;
+  windowRef.webContents.send("browser:downloads:state", [...downloads.values()].map(downloadSnapshot));
+}
+function attachDownloadHandler(browserSession) {
+  if (downloadSessions.has(browserSession)) return;
+  downloadSessions.add(browserSession);
+  browserSession.on("will-download", async (event, item) => {
+    const id = randomUUID();
+    const download = {
+      id, filename: item.getFilename(), url: item.getURL(), state: "choosing-location",
+      receivedBytes: 0, totalBytes: item.getTotalBytes(), savePath: null, item
+    };
+    downloads.set(id, download);
+    sendDownloads();
+    try {
+      const result = await dialog.showSaveDialog(windowRef, { defaultPath: download.filename, title: "Save download" });
+      if (result.canceled || !result.filePath) {
+        item.cancel();
+        download.state = "cancelled";
+        sendDownloads();
+        return;
+      }
+      download.savePath = result.filePath;
+      item.setSavePath(result.filePath);
+      download.state = "in-progress";
+      sendDownloads();
+    } catch {
+      item.cancel();
+      download.state = "cancelled";
+      sendDownloads();
+      return;
+    }
+    item.on("updated", (_event, state) => {
+      download.state = state === "interrupted" ? "interrupted" : "in-progress";
+      download.receivedBytes = item.getReceivedBytes();
+      download.totalBytes = item.getTotalBytes();
+      sendDownloads();
+    });
+    item.once("done", (_event, state) => {
+      download.state = state;
+      download.receivedBytes = item.getReceivedBytes();
+      download.totalBytes = item.getTotalBytes();
+      sendDownloads();
+    });
+  });
+}
 function attachTabEvents(tab) {
   const contents = tab.view.webContents;
   contents.setWindowOpenHandler(() => ({ action: "deny" }));
@@ -162,6 +216,7 @@ function attachTabEvents(tab) {
     }
   });
   const browserSession = contents.session;
+  attachDownloadHandler(browserSession);
   browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   browserSession.setPermissionCheckHandler(() => false);
 }
@@ -250,6 +305,15 @@ ipcMain.handle("browser:bookmarks:toggle", async (_event, item) => {
   return { ok: true, bookmarked: index < 0, bookmarks: profile.bookmarks };
 });
 ipcMain.handle("browser:history:get", () => profile.history.slice(0, 100));
+ipcMain.handle("browser:downloads:get", () => [...downloads.values()].map(downloadSnapshot));
+ipcMain.handle("browser:downloads:cancel", (_event, id) => {
+  const download = downloads.get(String(id));
+  if (!download || download.state !== "in-progress") return { ok: false };
+  download.item.cancel();
+  download.state = "cancelled";
+  sendDownloads();
+  return { ok: true };
+});
 ipcMain.handle("browser:history:clear", async () => {
   profile.history = [];
   await persistProfile();
