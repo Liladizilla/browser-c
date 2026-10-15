@@ -113,15 +113,24 @@ test("frameless browser chrome exposes working native window-control IPC actions
   assert.match(main, /isTrustedChromeEvent/);
 });
 
-test("page tools expose print, complete-page save, and detached developer tools", () => {
+test("page tools expose print, complete-page save, PDF export, screenshots, translation, and developer tools", () => {
   assert.match(html, /id="print-page"/);
   assert.match(html, /id="save-page-as"/);
+  assert.match(html, /id="save-page-pdf"/);
+  assert.match(html, /id="capture-page"/);
+  assert.match(html, /id="translate-page"/);
   assert.match(html, /id="open-devtools"/);
   assert.match(renderer, /api\.printPage\(\)/);
   assert.match(renderer, /api\.savePageAs\(\)/);
+  assert.match(renderer, /api\.savePagePdf\(\)/);
+  assert.match(renderer, /api\.capturePage\(\)/);
+  assert.match(renderer, /api\.translatePage\(\)/);
   assert.match(renderer, /api\.openDevTools\(\)/);
   assert.match(main, /webContents\.print\(/);
   assert.match(main, /webContents\.savePage\(result\.filePath, "HTMLComplete"\)/);
+  assert.match(main, /webContents\.printToPDF\(/);
+  assert.match(main, /webContents\.capturePage\(/);
+  assert.match(main, /translate\.google\.com\/translate/);
   assert.match(main, /webContents\.openDevTools\(\{ mode: "detach" \}\)/);
 });
 
