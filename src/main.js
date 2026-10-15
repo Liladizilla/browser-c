@@ -7,7 +7,7 @@ import { isWebUrl, resolveAddress } from "./navigation.js";
 import { canBookmarkTab, persistableTabs, shouldCancelDownloadOnTabClose, shouldPersistCompletedDownload, shouldRecordHistory } from "./privacy-policy.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const CHROME_HEIGHT = 178;
+const CHROME_HEIGHT = 136;
 const SESSION_VERSION = 1;
 const PROFILE_VERSION = 1;
 const MAX_HISTORY_ITEMS = 500;
