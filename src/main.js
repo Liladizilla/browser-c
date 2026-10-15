@@ -5,7 +5,7 @@ import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { isWebUrl, resolveAddress } from "./navigation.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const CHROME_HEIGHT = 112;
+const CHROME_HEIGHT = 148;
 const SESSION_VERSION = 1;
 const PROFILE_VERSION = 1;
 const MAX_HISTORY_ITEMS = 500;
