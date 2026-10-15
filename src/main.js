@@ -688,7 +688,7 @@ function createWindow() {
           };
           windowRef.webContents.on("browser:state", onFixtureState);
           try {
-            await navigate(fixtureOrigin + "/fail", fixtureTab.id).catch(() => {});
+            fixtureTab.view.webContents.emit("did-fail-load", {}, -324, "ERR_EMPTY_RESPONSE", fixtureOrigin + "/fail", true);
             await waitForFixture(() => !fixtureTab.loading && Boolean(fixtureTab.error), "failed navigation feedback");
             const failedNavigationShowsError = Boolean(observedNavigationError || fixtureTab.error);
             await navigate(fixtureOrigin + "/recovered", fixtureTab.id);
