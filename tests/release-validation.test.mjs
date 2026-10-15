@@ -9,6 +9,7 @@ import { spawnSync } from "node:child_process";
 
 const validator = fileURLToPath(new URL("../scripts/validate-release.mjs", import.meta.url));
 const collector = fileURLToPath(new URL("../scripts/collect-release-artifacts.mjs", import.meta.url));
+const sbomName = "SBOM.spdx.json";
 
 async function runValidator(platform, artifactNames, manifestFactory) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "browser-c-release-validation-"));
@@ -19,6 +20,17 @@ async function runValidator(platform, artifactNames, manifestFactory) {
       await writeFile(path.join(directory, name), bytes);
       hashes.set(name, createHash("sha256").update(bytes).digest("hex"));
     }
+    const sbom = JSON.stringify({
+      spdxVersion: "SPDX-2.3",
+      dataLicense: "CC0-1.0",
+      SPDXID: "SPDXRef-DOCUMENT",
+      name: "Browser C test dependencies",
+      documentNamespace: "https://example.invalid/browser-c/test-sbom",
+      creationInfo: { creators: ["Tool: browser-c-test"], created: "2026-10-15T00:00:00Z" },
+      packages: [{ name: "browser-c-test-dependency", SPDXID: "SPDXRef-Package-test", downloadLocation: "NOASSERTION", filesAnalyzed: false }]
+    });
+    await writeFile(path.join(directory, sbomName), sbom);
+    hashes.set(sbomName, createHash("sha256").update(sbom).digest("hex"));
     const manifest = manifestFactory
       ? manifestFactory(hashes)
       : [...hashes].map(([name, hash]) => `${hash}  ${name}`).join("\n") + "\n";
@@ -29,10 +41,10 @@ async function runValidator(platform, artifactNames, manifestFactory) {
   }
 }
 
-test("release validator accepts required Linux formats with matching checksums", async () => {
+test("release validator accepts required Linux formats with matching checksums and an SPDX SBOM", async () => {
   const result = await runValidator("linux", ["Browser-C.AppImage", "Browser-C.deb"]);
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /Release validation passed for linux: 2 artifact/);
+  assert.match(result.stdout, /Release validation passed for linux: 2 package artifact/);
 });
 
 test("release validator rejects a missing required package format", async () => {
@@ -42,13 +54,15 @@ test("release validator rejects a missing required package format", async () => 
 });
 
 test("release validator rejects checksum mismatches", async () => {
-  const result = await runValidator("windows", ["Browser-C.exe"], () => "0".repeat(64) + "  Browser-C.exe\n");
+  const result = await runValidator("windows", ["Browser-C.exe"], (hashes) =>
+    `${"0".repeat(64)}  Browser-C.exe\n${hashes.get(sbomName)}  ${sbomName}\n`);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Checksum mismatch for Browser-C\.exe/);
 });
 
 test("release validator rejects malformed checksum records", async () => {
-  const result = await runValidator("macos", ["Browser-C.dmg", "Browser-C.zip"], () => "not-a-checksum  Browser-C.dmg\n");
+  const result = await runValidator("macos", ["Browser-C.dmg", "Browser-C.zip"], (hashes) =>
+    `not-a-checksum  Browser-C.dmg\n${hashes.get("Browser-C.zip")}  Browser-C.zip\n${hashes.get(sbomName)}  ${sbomName}\n`);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Malformed checksum line/);
 });
@@ -56,7 +70,7 @@ test("release validator rejects malformed checksum records", async () => {
 test("release validator rejects duplicate checksum entries", async () => {
   const result = await runValidator("windows", ["Browser-C.exe"], (hashes) => {
     const hash = hashes.get("Browser-C.exe");
-    return `${hash}  Browser-C.exe\n${hash}  Browser-C.exe\n`;
+    return `${hash}  Browser-C.exe\n${hash}  Browser-C.exe\n${hashes.get(sbomName)}  ${sbomName}\n`;
   });
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Duplicate checksum entry/);
@@ -64,14 +78,14 @@ test("release validator rejects duplicate checksum entries", async () => {
 
 test("release validator rejects artifacts omitted from the checksum manifest", async () => {
   const result = await runValidator("macos", ["Browser-C.dmg", "Browser-C.zip"], (hashes) =>
-    `${hashes.get("Browser-C.dmg")}  Browser-C.dmg\n`);
+    `${hashes.get("Browser-C.dmg")}  Browser-C.dmg\n${hashes.get(sbomName)}  ${sbomName}\n`);
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Checksum manifest must cover every artifact exactly once/);
+  assert.match(result.stderr, /Checksum manifest must cover every package and the SBOM exactly once/);
 });
 
 test("release validator rejects unsafe checksum paths", async () => {
   const result = await runValidator("windows", ["Browser-C.exe"], (hashes) =>
-    hashes.get("Browser-C.exe") + "  ../Browser-C.exe\\n");
+    `${hashes.get("Browser-C.exe")}  ../Browser-C.exe\n${hashes.get(sbomName)}  ${sbomName}\n`);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Unsafe checksum filename/);
 });
@@ -120,6 +134,10 @@ test("release validator rejects zero-byte package artifacts", async () => {
   try {
     await writeFile(path.join(directory, "Browser-C.AppImage"), "");
     await writeFile(path.join(directory, "Browser-C.deb"), "deb");
+    await writeFile(path.join(directory, sbomName), JSON.stringify({
+      spdxVersion: "SPDX-2.3",
+      packages: [{ name: "test", SPDXID: "SPDXRef-Package-test" }]
+    }));
     const result = spawnSync(process.execPath, [validator, "linux", directory], { encoding: "utf8" });
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /Package artifact is empty: Browser-C\.AppImage/);
