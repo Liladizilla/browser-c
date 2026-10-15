@@ -1,53 +1,45 @@
 # Browser C
 
-**Browser C** is an independent cross-platform desktop browser project targeting Windows, macOS, Linux, and, subject to OS support work, CharisOS.
+**Browser C** is an independent cross-platform desktop browser targeting Windows, macOS, and Linux, with CharisOS as a future research target.
 
-The goal is a real daily-use browser with a production-grade web engine, reliable networking, modern graphics, useful browser features, and security as a core requirement. This repository is the beginning of that work, not a claim that those features already exist.
+## Current stage
 
-## Status
+The first Electron shell now exists on the `feat/electron-browser-shell` branch. It uses Electron's bundled Chromium engine and includes a navigation toolbar, address/search input, back/forward/reload/stop/home controls, and an isolated website view.
 
-**Stage: foundation and architecture.** The repository and initial engineering plan are in place. A working browser shell, automated platform builds, and browser-level verification remain to be implemented.
+This is an early prototype, not yet a complete daily-use browser. Tabs, bookmarks, history, download management, user-controlled permissions, private sessions, installer packaging, and browser-level security testing remain future work.
 
-## Technology direction
+## Technology and security
 
-- **Desktop shell:** Electron + TypeScript as the initial cross-platform application shell.
-- **Web engine:** Chromium bundled with a pinned, supported Electron release. We will not write a browser engine from scratch.
-- **Browser features:** tabs, address/search, navigation, bookmarks, history, downloads, settings, private sessions, and explicit permission controls.
-- **Security:** context isolation, sandboxed web content, restrictive navigation and permissions, no Node.js access from visited websites, dependency updates, and safe download handling.
-- **Graphics and media:** use engine-supported rendering, WebGL/WebGPU where available, media playback, and hardware acceleration; verify on real target hardware.
-- **Platform strategy:** Windows, macOS, and Linux first. CharisOS is a separate integration target dependent on its OS interfaces.
+- Electron + JavaScript modules, with the Electron version pinned in the application manifest.
+- Chromium supplied by Electron; no attempt to implement a new web engine.
+- Context isolation, sandboxing, disabled Node integration for both chrome and visited pages, and a narrow preload API.
+- Website-created windows blocked by default; web permissions denied until user-facing permission controls exist.
+- Address navigation restricted to HTTP/HTTPS. Plain text becomes a web search query.
+- Graphics and media depend on Chromium/Electron support and must be verified on target hardware.
 
-Electron does not automatically expose every feature of a full Chromium distribution. Browser-specific features must be evaluated and tested before being promised.
+Read [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), and the [Security model](docs/SECURITY_MODEL.md).
 
-## Project documents
+## Development
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Roadmap](docs/ROADMAP.md)
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
-
-## Foundation checks
-
-The initial CI validates repository structure on Linux, Windows, and macOS. It is not a browser integration test and does not produce installable application binaries yet.
+Install a supported Node.js release and project dependencies, then run the app with the documented start command. Foundation tests run with:
 
 ```sh
 npm test
 npm run validate
+npm run check
 ```
 
-Application build instructions will be added with the initial Electron application scaffold.
+Linux, Windows, and macOS are CI targets. A passing foundation test does not establish that every website, GPU, codec, or hardware configuration works.
 
 ## Platform goals
 
 | Platform | Goal | Status |
 | --- | --- | --- |
-| Windows 10/11 x64 | Desktop app | Planned |
-| macOS supported Electron architectures | Desktop app | Planned |
-| Linux x64 | Desktop app | Planned |
+| Windows 10/11 x64 | Desktop app | Prototype work |
+| macOS supported Electron architectures | Desktop app | Prototype work |
+| Linux x64 | Desktop app | Prototype work |
 | CharisOS | Native integration or compatible browser host | Research required |
-
-Exact minimum OS versions and CPU architectures will be documented after testing.
 
 ## License
 
-Browser C project code is licensed under the [MIT License](LICENSE). Third-party components, including Chromium and Electron, retain their own licenses and notices.
+Browser C project code is licensed under the [MIT License](LICENSE). Electron, Chromium, and other third-party components retain their own licenses and notices.
