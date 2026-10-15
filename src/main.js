@@ -365,7 +365,7 @@ function closeTab(id = activeTabId) {
 }
 function createWindow() {
   windowRef = new BrowserWindow({
-    width: 1280, height: 840, minWidth: 720, minHeight: 480, title: "Browser C", backgroundColor: "#101214",
+    width: 1280, height: 840, minWidth: 520, minHeight: 480, title: "Browser C", backgroundColor: "#101214",
     webPreferences: { preload: path.join(here, "preload.cjs"), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false }
   });
   const chromePath = path.join(here, "renderer", "index.html");
@@ -451,7 +451,32 @@ function createWindow() {
           || !interactions.findShortcutOpensOverlay || !interactions.privateTabCloses) {
           throw new Error("UI interaction assertions failed: " + JSON.stringify(interactions));
         }
-        console.log("BROWSER_C_UI_SMOKE_PASS " + JSON.stringify({ ...result, interactions }));
+        windowRef.setSize(520, 840);
+        const narrowLayout = await windowRef.webContents.executeJavaScript(`(async () => {
+          for (let attempt = 0; attempt < 30 && document.documentElement.clientWidth > 560; attempt++) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+          const width = document.documentElement.clientWidth;
+          const toolbar = document.querySelector(".toolbar");
+          const rows = [".tab-row", ".controls", ".library-controls"].map((selector) => {
+            const element = document.querySelector(selector);
+            return { selector, clientWidth: element.clientWidth, scrollWidth: element.scrollWidth };
+          });
+          return {
+            viewportWidth: width,
+            toolbarClientWidth: toolbar.clientWidth,
+            toolbarScrollWidth: toolbar.scrollWidth,
+            homeHidden: getComputedStyle(document.querySelector("#home")).display === "none",
+            rows
+          };
+        })()`);
+        if (narrowLayout.viewportWidth > 560
+          || narrowLayout.toolbarScrollWidth > narrowLayout.toolbarClientWidth
+          || narrowLayout.rows.some((row) => row.scrollWidth > row.clientWidth)) {
+          throw new Error("Responsive layout overflow at 520px: " + JSON.stringify(narrowLayout));
+        }
+        windowRef.setSize(1280, 840);
+        console.log("BROWSER_C_UI_SMOKE_PASS " + JSON.stringify({ ...result, interactions, narrowLayout }));
       } catch (error) {
         console.error("BROWSER_C_UI_SMOKE_FAIL " + (error?.stack || error));
         app.exit(1);

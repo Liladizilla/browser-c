@@ -32,3 +32,9 @@ test("narrow window breakpoints preserve usable toolbar controls", () => {
   assert.match(css, /@media \(max-width: 520px\)/);
   assert.match(css, /#home \{ display: none; \}/);
 });
+
+test("minimum window width makes the narrow responsive layout reachable and smoke-tested", () => {
+  assert.match(main, /minWidth: 520/);
+  assert.match(main, /Responsive layout overflow at 520px/);
+  assert.match(css, /@media \(max-width: 520px\)/);
+});
