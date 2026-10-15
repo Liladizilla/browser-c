@@ -60,7 +60,7 @@ jobs:
       - name: Validate package formats and checksums
         run: node scripts/validate-release.mjs ${{ matrix.platform }} release/artifacts
       - name: Attest package and checksum provenance
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             release/artifacts/*
