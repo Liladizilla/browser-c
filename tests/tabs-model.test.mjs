@@ -116,6 +116,8 @@ test("download event listeners are attached before the save dialog await", () =>
 test("private tabs use unique non-persistent partitions and never enter saved sessions", () => {
   assert.match(main, /private-" \+ randomUUID\(\)/);
   assert.match(main, /: "persist:browser-c"/);
+  assert.match(main, /persistableTabs\\(tabs, isWebUrl, 20\\)/);
+  assert.match(main, /shouldRecordHistory\\(tab, isWebUrl\\)/);
   assert.match(main, /tabs\.filter\(\(tab\) => !tab\.isPrivate\)/);
   assert.match(main, /if \(tab\.isPrivate \|\| !isWebUrl\(tab\.url\)\) return/);
   assert.match(main, /isPrivate: Boolean\(tab\?\.isPrivate\)/);
