@@ -495,6 +495,11 @@ function createWindow() {
         const fixtureServer = createServer((request, response) => {
           const route = new URL(request.url || "/", "http://127.0.0.1").pathname;
           fixtureHits.set(route, (fixtureHits.get(route) || 0) + 1);
+          if (route === "/redirect") {
+            response.writeHead(302, { location: "/one" });
+            response.end();
+            return;
+          }
           if (route === "/slow") {
             const timer = setTimeout(() => {
               response.writeHead(200, { "content-type": "text/html" });
@@ -552,14 +557,28 @@ function createWindow() {
           fixtureTab.view.webContents.stop();
           await waitForFixture(() => !fixtureTab.loading, "stop to clear loading state");
           await slowNavigation;
+          await navigate(fixtureOrigin + "/redirect", fixtureTab.id);
+          await waitForFixture(() => fixtureTab.view.webContents.getURL().endsWith("/one") && !fixtureTab.loading, "redirect destination");
+          const redirectWorks = fixtureTab.view.webContents.getURL().endsWith("/one");
+          await navigate("http://127.0.0.1:1/unreachable", fixtureTab.id).catch(() => {});
+          await waitForFixture(() => Boolean(fixtureTab.error) && !fixtureTab.loading, "failed navigation error state");
+          const failureFeedback = await windowRef.webContents.executeJavaScript("(() => ({ statusShowsError: document.getElementById('status').textContent.includes('Load error:'), retryVisible: !document.getElementById('retry-navigation').hidden, retryEnabled: !document.getElementById('retry-navigation').disabled }))()");
+          await windowRef.webContents.executeJavaScript("document.getElementById('retry-navigation').click()");
+          await waitForFixture(() => Boolean(fixtureTab.error) && !fixtureTab.loading, "retry failure feedback");
+          const retryWorks = await windowRef.webContents.executeJavaScript("!document.getElementById('retry-navigation').hidden");
           const navigationIntegration = {
             backForwardWorks,
             reloadWorks: (fixtureHits.get("/two") || 0) > previousReloadCount,
             stopClearsLoading: !fixtureTab.loading,
+            redirectWorks,
+            failureFeedback,
+            retryWorks,
             currentUrl: fixtureTab.view.webContents.getURL(),
             fixtureHits: Object.fromEntries(fixtureHits)
           };
-          if (!navigationIntegration.backForwardWorks || !navigationIntegration.reloadWorks || !navigationIntegration.stopClearsLoading) {
+          if (!navigationIntegration.backForwardWorks || !navigationIntegration.reloadWorks || !navigationIntegration.stopClearsLoading
+            || !navigationIntegration.redirectWorks || !failureFeedback.statusShowsError || !failureFeedback.retryVisible
+            || !failureFeedback.retryEnabled || !retryWorks) {
             throw new Error("Navigation integration assertions failed: " + JSON.stringify(navigationIntegration));
           }
           console.log("BROWSER_C_NAVIGATION_SMOKE_PASS " + JSON.stringify(navigationIntegration));
