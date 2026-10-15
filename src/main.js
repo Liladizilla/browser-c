@@ -1,6 +1,6 @@
 import { app, BrowserWindow, WebContentsView, ipcMain } from "electron";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { isWebUrl, resolveAddress } from "./navigation.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -46,6 +46,12 @@ function createWindow() {
       partition: "persist:browser-c"
     }
   });
+  const chromePath = path.join(here, "renderer", "index.html");
+  const chromeUrl = pathToFileURL(chromePath).href;
+  windowRef.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  windowRef.webContents.on("will-navigate", (event, url) => { if (url !== chromeUrl) event.preventDefault(); });
+  windowRef.webContents.on("will-redirect", (event, url) => { if (url !== chromeUrl) event.preventDefault(); });
+
   windowRef.contentView.addChildView(pageView);
   layoutPage();
   windowRef.on("resize", layoutPage);
@@ -53,6 +59,7 @@ function createWindow() {
 
   pageView.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   pageView.webContents.on("will-navigate", (event, url) => { if (!isWebUrl(url)) event.preventDefault(); });
+  pageView.webContents.on("will-redirect", (event, url) => { if (!isWebUrl(url)) event.preventDefault(); });
   pageView.webContents.on("did-start-navigation", (_event, url, _inPlace, isMainFrame) => {
     if (isMainFrame && isWebUrl(url)) currentUrl = url;
     sendState({ loading: true });
@@ -76,7 +83,7 @@ function createWindow() {
   browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   browserSession.setPermissionCheckHandler(() => false);
 
-  windowRef.loadFile(path.join(here, "renderer", "index.html"));
+  windowRef.loadFile(chromePath);
   pageView.webContents.loadURL(currentUrl).catch(() => sendState({ loading: false, error: "The page could not be loaded." }));
 }
 
