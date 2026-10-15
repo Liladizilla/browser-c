@@ -199,7 +199,7 @@ async function showLibrary(mode, trigger = null) {
         : entry.url;
       open.append(title, detail);
       open.addEventListener("click", async () => {
-        libraryPanel.hidden = true;
+        closeLibraryPanel();
         await api.navigate(entry.url);
       });
       row.append(open);
