@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld("browserC", Object.freeze({
   closeTab: (id) => ipcRenderer.invoke("browser:close-tab", Number(id)),
   getState: () => ipcRenderer.invoke("browser:get-state"),
   clearSitePermissions: () => ipcRenderer.invoke("browser:permissions:clear-site"),
+  setSearchProvider: (provider) => ipcRenderer.invoke("browser:settings:search-provider", String(provider ?? "")),
   getBookmarks: () => ipcRenderer.invoke("browser:bookmarks:get"),
   toggleBookmark: (item) => ipcRenderer.invoke("browser:bookmarks:toggle", { url: String(item?.url ?? ""), title: String(item?.title ?? "") }),
   getHistory: () => ipcRenderer.invoke("browser:history:get"),
