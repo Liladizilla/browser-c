@@ -37,9 +37,11 @@ const pendingPermissionPrompts = new WeakMap();
 const privateSessions = new WeakSet();
 
 const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
+const canGoBack = (contents) => contents.navigationHistory.canGoBack();
+const canGoForward = (contents) => contents.navigationHistory.canGoForward();
 function tabSnapshot(tab) {
   return { id: tab.id, url: tab.url, title: tab.title || "New Tab", loading: Boolean(tab.loading),
-    canGoBack: tab.view.webContents.canGoBack(), canGoForward: tab.view.webContents.canGoForward(),
+    canGoBack: canGoBack(tab.view.webContents), canGoForward: canGoForward(tab.view.webContents),
     zoomFactor: tab.view.webContents.getZoomFactor(), active: tab.id === activeTabId, isPrivate: Boolean(tab.isPrivate) };
 }
 function sendState(patch = {}) {
@@ -47,8 +49,8 @@ function sendState(patch = {}) {
   const tab = activeTab();
   windowRef.webContents.send("browser:state", {
     tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
-    loading: Boolean(tab?.loading), canGoBack: Boolean(tab && tab.view.webContents.canGoBack()),
-    canGoForward: Boolean(tab && tab.view.webContents.canGoForward()),
+    loading: Boolean(tab?.loading), canGoBack: Boolean(tab && canGoBack(tab.view.webContents)),
+    canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
     zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, ...patch
   });
 }
@@ -265,7 +267,7 @@ function attachTabEvents(tab) {
   contents.on("will-redirect", (event, url) => { if (!isWebUrl(url)) event.preventDefault(); });
   contents.on("did-start-navigation", (_event, url, _inPlace, isMainFrame) => {
     if (isMainFrame && isWebUrl(url)) tab.url = url;
-    tab.loading = true; sendState();
+    tab.loading = true; sendState({ error: "" });
   });
   contents.on("page-title-updated", (_event, title) => {
     tab.title = title || "New Tab";
@@ -280,7 +282,7 @@ function attachTabEvents(tab) {
   });
   contents.on("did-navigate-in-page", (_event, url) => { tab.url = url; sendState(); scheduleSessionSave(); });
   contents.on("did-finish-load", () => {
-    tab.url = contents.getURL(); tab.title = contents.getTitle() || "New Tab"; tab.loading = false; sendState();
+    tab.url = contents.getURL(); tab.title = contents.getTitle() || "New Tab"; tab.loading = false; sendState({ error: "" });
   });
   contents.on("did-fail-load", (_event, code, description, validatedURL, isMainFrame) => {
     if (isMainFrame && code !== -3) {
@@ -495,8 +497,8 @@ ipcMain.handle("browser:navigate", async (_event, input) => {
   try { return { ok: true, url: await navigate(input) }; }
   catch (error) { return { ok: false, error: error instanceof Error ? error.message : "Navigation failed." }; }
 });
-ipcMain.handle("browser:back", () => { const tab = activeTab(); if (tab?.view.webContents.canGoBack()) tab.view.webContents.goBack(); });
-ipcMain.handle("browser:forward", () => { const tab = activeTab(); if (tab?.view.webContents.canGoForward()) tab.view.webContents.goForward(); });
+ipcMain.handle("browser:back", () => { const tab = activeTab(); if (tab && canGoBack(tab.view.webContents)) tab.view.webContents.navigationHistory.goBack(); });
+ipcMain.handle("browser:forward", () => { const tab = activeTab(); if (tab && canGoForward(tab.view.webContents)) tab.view.webContents.navigationHistory.goForward(); });
 ipcMain.handle("browser:reload", () => activeTab()?.view.webContents.reload());
 ipcMain.handle("browser:stop", () => activeTab()?.view.webContents.stop());
 ipcMain.handle("browser:find:start", (_event, query) => {
@@ -533,7 +535,7 @@ ipcMain.handle("browser:close-tab", (_event, id) => closeTab(id));
 ipcMain.handle("browser:get-state", () => {
   const tab = activeTab();
   return { tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C", isPrivate: Boolean(tab?.isPrivate),
-    canGoBack: Boolean(tab && tab.view.webContents.canGoBack()), canGoForward: Boolean(tab && tab.view.webContents.canGoForward()),
+    canGoBack: Boolean(tab && canGoBack(tab.view.webContents)), canGoForward: Boolean(tab && canGoForward(tab.view.webContents)),
     loading: Boolean(tab?.loading), zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1 };
 });
 ipcMain.handle("browser:bookmarks:get", () => profile.bookmarks);

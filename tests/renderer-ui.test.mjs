@@ -44,3 +44,18 @@ test("tab list supports arrow and boundary keyboard navigation", () => {
   assert.match(renderer, /api\.activateTab\(Number\(nextTab\.dataset\.tabId\)\)/);
   assert.match(renderer, /setAttribute\("data-tab-id", String\(tab\.id\)\)/);
 });
+
+
+test("navigation history uses the supported Electron navigationHistory API", () => {
+  assert.match(main, /navigationHistory\.canGoBack\(\)/);
+  assert.match(main, /navigationHistory\.canGoForward\(\)/);
+  assert.match(main, /navigationHistory\.goBack\(\)/);
+  assert.match(main, /navigationHistory\.goForward\(\)/);
+  assert.doesNotMatch(main, /\.webContents\.canGoBack\(\)|\.webContents\.canGoForward\(\)/);
+});
+
+test("navigation start and successful load clear stale navigation errors", () => {
+  assert.match(main, /did-start-navigation[\s\S]{0,180}sendState\(\{ error: "" \}\)/);
+  assert.match(main, /did-finish-load[\s\S]{0,180}sendState\(\{ error: "" \}\)/);
+  assert.match(main, /did-fail-load[\s\S]{0,200}code !== -3/);
+});
