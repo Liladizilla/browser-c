@@ -19,7 +19,7 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Add automated address-resolution and security-policy regression tests.
 - [ ] Run application smoke tests on Linux, Windows, and macOS.
 - [ ] Test a local page and controlled HTTPS page on each target OS.
-- [ ] Add lockfile-based reproducible dependency installation.
+- [x] Use lockfile-based reproducible dependency installation with `npm ci`.
 
 **Exit gate:** app launches and navigates on Linux, Windows, and macOS; untrusted content cannot access Node.js or privileged browser APIs. CI and unit tests alone do not satisfy this gate.
 
