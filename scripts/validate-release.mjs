@@ -1,0 +1,39 @@
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+
+const platform = process.argv[2];
+const expectedExtensions = {
+  linux: [".AppImage", ".deb"],
+  windows: [".exe"],
+  macos: [".dmg", ".zip"]
+};
+assert.ok(Object.hasOwn(expectedExtensions, platform), "Usage: node scripts/validate-release.mjs <linux|windows|macos>");
+
+const directory = path.resolve(process.argv[3] ?? "release");
+const entries = await readdir(directory, { withFileTypes: true });
+const artifacts = entries.filter((entry) => entry.isFile() && entry.name !== "SHA256SUMS.txt").map((entry) => entry.name).sort();
+assert.ok(artifacts.length > 0, "Release directory contains no package artifacts");
+for (const extension of expectedExtensions[platform]) {
+  assert.ok(artifacts.some((name) => name.toLowerCase().endsWith(extension.toLowerCase())),
+    `Expected a ${extension} package for ${platform}; found: ${artifacts.join(", ")}`);
+}
+
+const manifest = await readFile(path.join(directory, "SHA256SUMS.txt"), "utf8");
+const records = new Map();
+for (const line of manifest.split(/\r?\n/).filter(Boolean)) {
+  const match = /^([a-f0-9]{64})  (.+)$/.exec(line);
+  assert.ok(match, `Malformed checksum line: ${line}`);
+  assert.ok(!records.has(match[2]), `Duplicate checksum entry: ${match[2]}`);
+  records.set(match[2], match[1]);
+}
+assert.deepEqual([...records.keys()].sort(), artifacts, "Checksum manifest must cover every artifact exactly once");
+
+for (const name of artifacts) {
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(path.join(directory, name))) hash.update(chunk);
+  assert.equal(records.get(name), hash.digest("hex"), `Checksum mismatch for ${name}`);
+}
+console.log(`Release validation passed for ${platform}: ${artifacts.length} artifact(s), required package formats present, all SHA-256 entries verified.`);
