@@ -28,7 +28,9 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Multiple tabs with create, switch, and close behavior.
 - [x] Keyboard shortcuts for new tab, close tab, focus address, reload, and cycle tabs.
 - [x] Versioned session restore for up to ten web tabs.
-- [ ] Bookmarks, history, search-provider settings, and clear-history controls.
+- [x] Preserve the selected tab and save sessions when windows close.
+- [x] Bookmarks, browsing history, persistent profile storage, and clear-history controls.
+- [ ] Search-provider settings.
 - [ ] Downloads UI, destination handling, cancellation, and safe-file handling.
 - [ ] Permission prompts for camera, microphone, geolocation, notifications, and other exposed APIs.
 - [ ] Find in page, zoom, print, devtools access, and accessibility review.
