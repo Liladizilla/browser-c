@@ -56,7 +56,7 @@ test("history records only web URLs and remains bounded", () => {
   assert.match(main, /recordHistory\(tab\)/);
 });
 test("content view layout accounts for the expanded browser toolbar", () => {
-  assert.match(main, /CHROME_HEIGHT = 148/);
+  assert.match(main, /CHROME_HEIGHT = 178/);
 });
 
 test("unsupported session versions fall back to a valid empty session model", () => {
@@ -83,6 +83,7 @@ test("find-in-page uses bounded query input and narrow IPC methods", () => {
   assert.match(main, /slice\(0, 500\)/);
   assert.match(preload, /browser:find:start/);
   assert.match(preload, /browser:find:next/);
+  assert.match(preload, /browser:find:previous/);
   assert.match(preload, /browser:find:stop/);
   assert.match(renderer, /openFindBar/);
 });
