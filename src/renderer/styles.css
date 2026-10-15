@@ -34,6 +34,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid #d6a64c; outline-
 .library-controls { display: flex; align-items: center; gap: 6px; padding-left: 80px; }
 .library-controls button, .clear-history { flex: 0 0 auto; width: auto; height: 23px; padding: 0 9px; border: 1px solid #343a40; border-radius: 6px; font-size: 11px; }
 .library-controls #bookmark-current { color: #e4c27a; }
+.search-provider-label { color: #9aa2aa; font-size: 10px; }
+#search-provider { flex: 0 1 112px; width: 112px; min-width: 82px; height: 23px; padding: 0 5px; border: 1px solid #343a40; border-radius: 6px; background: #111315; color: #d4d8dc; font: inherit; font-size: 10px; }
+#search-provider:focus-visible { outline: 2px solid #d6a64c; outline-offset: 1px; }
 .library-controls #clear-site-permissions:not(:disabled) { border-color: #8a6d35; color: #e4c27a; }
 .library-controls button:disabled { opacity: 0.45; cursor: default; }
 .zoom-controls { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
