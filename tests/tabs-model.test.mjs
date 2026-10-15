@@ -24,8 +24,18 @@ test("session restoration is versioned and restricts restored URLs", () => {
   assert.match(main, /isWebUrl\(url\)/);
   assert.match(main, /session\.json/);
 });
-test("keyboard shortcuts cover common tab operations", () => {
-  assert.match(renderer, /key === "t"/);
-  assert.match(renderer, /key === "w"/);
-  assert.match(renderer, /key === "tab"/);
+test("keyboard shortcuts are handled inside loaded page views", () => {
+  assert.match(main, /before-input-event/);
+  assert.match(main, /key === "t"/);
+  assert.match(main, /key === "w"/);
+  assert.match(main, /key === "tab"/);
+  assert.match(preload, /browser:focus-address/);
+});
+test("closing a window snapshots tabs before clearing runtime state", () => {
+  assert.match(main, /lastSessionSnapshot = \{/);
+  assert.match(main, /lastSessionSnapshot\?\.tabs/);
+});
+test("session restoration preserves the selected tab index", () => {
+  assert.match(main, /activeIndex/);
+  assert.match(main, /activateTab\(tabs\[Math\.min\(session\.activeIndex/);
 });
