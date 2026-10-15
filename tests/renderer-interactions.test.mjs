@@ -82,6 +82,8 @@ function createHarness() {
       this.handlers.set(type, callbacks);
     }
   };
+  elements.get("#password-panel").hidden = true;
+  elements.get("#settings-panel").hidden = true;
   vm.runInNewContext(rendererSource, { window: { browserC: api }, document, console, Date });
   return { elements, apiCalls, apiListeners, document };
 }
@@ -199,4 +201,35 @@ test("page tools invoke PDF export, screenshot capture, and translation actions"
   assert.ok(h.apiCalls.some((call) => call.name === "savePageAsPdf"));
   assert.ok(h.apiCalls.some((call) => call.name === "captureScreenshot"));
   assert.ok(h.apiCalls.some((call) => call.name === "translatePage"));
+});
+
+
+test("password vault opens, pre-fills the current HTTPS URL, and saves a manual entry", async () => {
+  const h = createHarness();
+  h.apiListeners.onState({ url: "https://example.com/login", title: "Login", tabs: [], activeTabId: 1 });
+  await h.elements.get("#open-passwords").fire("click");
+  assert.equal(h.elements.get("#password-panel").hidden, false);
+  assert.equal(h.elements.get("#password-site").value, "https://example.com/login");
+  h.elements.get("#password-username").value = "person@example.com";
+  h.elements.get("#password-secret").value = "test-password";
+  await h.elements.get("#password-form").fire("submit");
+  const call = h.apiCalls.find((item) => item.name === "savePassword");
+  assert.deepEqual(call.args[0], {
+    url: "https://example.com/login",
+    username: "person@example.com",
+    password: "test-password"
+  });
+  assert.equal(h.elements.get("#password-secret").value, "");
+});
+
+test("Escape closes the password vault and clears the password form", async () => {
+  const h = createHarness();
+  await h.elements.get("#open-passwords").fire("click");
+  h.elements.get("#password-secret").value = "temporary-secret";
+  h.document.handlers.get("keydown")[0]({
+    key: "Escape", ctrlKey: false, metaKey: false,
+    preventDefault() { this.prevented = true; }
+  });
+  assert.equal(h.elements.get("#password-panel").hidden, true);
+  assert.equal(h.elements.get("#password-secret").value, "");
 });
