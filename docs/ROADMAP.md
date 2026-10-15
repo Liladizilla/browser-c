@@ -34,7 +34,9 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Download list, explicit save-location prompt, progress display, and cancellation.
 - [ ] Safe-file handling and completed-download actions.
 - [ ] Permission prompts for camera, microphone, geolocation, notifications, and other exposed APIs.
-- [ ] Find in page, zoom, print, devtools access, and accessibility review.
+- [x] Find in page with next/previous navigation and Ctrl/Cmd+F entry.
+- [x] Per-tab page zoom controls with keyboard shortcuts and bounded 50%–300% scaling.
+- [ ] Print, devtools access, and accessibility review.
 - [ ] Private windows with isolated non-persistent sessions and leakage tests.
 
 **Exit gate:** features have tests and defined behavior for crashes, denied permissions, network failure, and invalid input.
