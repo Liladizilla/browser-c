@@ -6,7 +6,7 @@ import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { isWebUrl, resolveAddress } from "./navigation.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const CHROME_HEIGHT = 148;
+const CHROME_HEIGHT = 178;
 const SESSION_VERSION = 1;
 const PROFILE_VERSION = 1;
 const MAX_HISTORY_ITEMS = 500;
@@ -27,7 +27,7 @@ const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
 function tabSnapshot(tab) {
   return { id: tab.id, url: tab.url, title: tab.title || "New Tab", loading: Boolean(tab.loading),
     canGoBack: tab.view.webContents.canGoBack(), canGoForward: tab.view.webContents.canGoForward(),
-    active: tab.id === activeTabId };
+    zoomFactor: tab.view.webContents.getZoomFactor(), active: tab.id === activeTabId };
 }
 function sendState(patch = {}) {
   if (!windowRef || windowRef.isDestroyed()) return;
@@ -35,7 +35,8 @@ function sendState(patch = {}) {
   windowRef.webContents.send("browser:state", {
     tabs: tabs.map(tabSnapshot), activeTabId, url: tab?.url ?? "", title: tab?.title ?? "Browser C",
     loading: Boolean(tab?.loading), canGoBack: Boolean(tab && tab.view.webContents.canGoBack()),
-    canGoForward: Boolean(tab && tab.view.webContents.canGoForward()), ...patch
+    canGoForward: Boolean(tab && tab.view.webContents.canGoForward()),
+    zoomFactor: tab?.view.webContents.getZoomFactor() ?? 1, ...patch
   });
 }
 function layoutTabs() {
@@ -207,6 +208,10 @@ function attachTabEvents(tab) {
     if (key === "t") { event.preventDefault(); createTab(); }
     else if (key === "w") { event.preventDefault(); closeTab(tab.id); }
     else if (key === "l") { event.preventDefault(); windowRef?.webContents.send("browser:focus-address"); }
+    else if (key === "f") { event.preventDefault(); windowRef?.webContents.send("browser:find:open"); }
+    else if (key === "+" || key === "=") { event.preventDefault(); changeZoom("in", tab.id); }
+    else if (key === "-") { event.preventDefault(); changeZoom("out", tab.id); }
+    else if (key === "0") { event.preventDefault(); changeZoom("reset", tab.id); }
     else if (key === "r") { event.preventDefault(); contents.reload(); }
     else if (key === "tab" && tabs.length > 1) {
       event.preventDefault();
@@ -235,6 +240,16 @@ function createTab(url = "https://www.google.com/") {
   });
   sendState(); scheduleSessionSave();
   return tabSnapshot(tab);
+}
+function changeZoom(action, tabId = activeTabId) {
+  const tab = tabs.find((candidate) => candidate.id === Number(tabId));
+  if (!tab) return { ok: false, error: "Tab not found." };
+  const current = tab.view.webContents.getZoomFactor();
+  const next = action === "reset" ? 1 : action === "in" ? Math.min(3, current + 0.1) : action === "out" ? Math.max(0.5, current - 0.1) : null;
+  if (next === null) return { ok: false, error: "Unsupported zoom action." };
+  tab.view.webContents.setZoomFactor(Number(next.toFixed(2)));
+  sendState();
+  return { ok: true, zoomFactor: tab.view.webContents.getZoomFactor() };
 }
 function activateTab(id) {
   const tab = tabs.find((candidate) => candidate.id === Number(id));
@@ -284,6 +299,25 @@ ipcMain.handle("browser:back", () => { const tab = activeTab(); if (tab?.view.we
 ipcMain.handle("browser:forward", () => { const tab = activeTab(); if (tab?.view.webContents.canGoForward()) tab.view.webContents.goForward(); });
 ipcMain.handle("browser:reload", () => activeTab()?.view.webContents.reload());
 ipcMain.handle("browser:stop", () => activeTab()?.view.webContents.stop());
+ipcMain.handle("browser:find:start", (_event, query) => {
+  const tab = activeTab();
+  const value = String(query ?? "").slice(0, 500);
+  if (!tab || !value.trim()) return { ok: false, error: "Enter text to find." };
+  tab.view.webContents.findInPage(value, { matchCase: false, findNext: false });
+  return { ok: true };
+});
+ipcMain.handle("browser:find:next", (_event, query) => {
+  const tab = activeTab();
+  const value = String(query ?? "").slice(0, 500);
+  if (!tab || !value.trim()) return { ok: false, error: "Enter text to find." };
+  tab.view.webContents.findInPage(value, { matchCase: false, findNext: true });
+  return { ok: true };
+});
+ipcMain.handle("browser:find:stop", () => {
+  activeTab()?.view.webContents.stopFindInPage("clearSelection");
+  return { ok: true };
+});
+ipcMain.handle("browser:zoom", (_event, action) => changeZoom(String(action)));
 ipcMain.handle("browser:home", () => navigate("https://www.google.com/").catch(() => {}));
 ipcMain.handle("browser:new-tab", () => createTab());
 ipcMain.handle("browser:activate-tab", (_event, id) => activateTab(id));
