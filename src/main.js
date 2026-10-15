@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
-import { isWebUrl, resolveAddress } from "./navigation.js";
+import { isWebUrl, resolveAddress, navigationErrorMessage } from "./navigation.js";
 import { canBookmarkTab, persistableTabs, shouldCancelDownloadOnTabClose, shouldPersistCompletedDownload, shouldRecordHistory } from "./privacy-policy.js";
 import { downloadSafetyWarning } from "./download-policy.js";
 
@@ -334,7 +334,7 @@ function attachTabEvents(tab) {
   contents.on("did-fail-load", (_event, code, description, validatedURL, isMainFrame) => {
     if (isMainFrame && code !== -3) {
       tab.loading = false;
-      tab.error = description || "The page could not be loaded.";
+      tab.error = navigationErrorMessage(code, description);
       if (tab.id === activeTabId) sendState({ error: tab.error, url: validatedURL });
     }
   });
@@ -910,6 +910,13 @@ function restoreTabs(session) {
   layoutTabs();
   sendState();
 }
+app.on("certificate-error", (event, _contents, _url, _error, _certificate, callback) => {
+  // Never bypass TLS verification. The renderer receives the navigation failure
+  // and displays a safe recovery message; users cannot click through a bad cert.
+  event.preventDefault();
+  callback(false);
+});
+
 app.whenReady().then(async () => {
   await loadProfile();
   createWindow();
