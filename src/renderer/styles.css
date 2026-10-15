@@ -40,3 +40,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #d6a64c; outline-
 .library-entry small { display: block; color: #9aa2aa; font-size: 10px; margin-top: 3px; }
 .library-empty { padding: 14px 6px; color: #9aa2aa; font-size: 11px; }
 .clear-history { margin-top: 8px; }
+
+.download-detail { flex: 1; min-width: 0; display: grid; gap: 4px; padding: 4px; overflow-wrap: anywhere; }
+.download-detail strong { font-size: 11px; font-weight: 600; }
+.download-detail small { color: #9aa2aa; font-size: 10px; }
