@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-app="\${1:-}"
+app="${1:-}"
 if [[ -z "$app" || ! -d "$app" ]]; then
   echo "Usage: $0 /path/to/Browser C.app" >&2
   exit 2
@@ -29,7 +29,7 @@ markers=(
   BROWSER_C_RENDERER_CRASH_RECOVERY_PASS
 )
 deadline=$((SECONDS + 90))
-missing=("\${markers[@]}")
+missing=("${markers[@]}")
 cleanup() {
   if kill -0 "$app_pid" 2>/dev/null; then
     kill "$app_pid" 2>/dev/null || true
@@ -45,10 +45,10 @@ while (( SECONDS < deadline )); do
     exit 1
   fi
   missing=()
-  for marker in "\${markers[@]}"; do
+  for marker in "${markers[@]}"; do
     grep -q "$marker" "$log" || missing+=("$marker")
   done
-  if (( \${#missing[@]} == 0 )); then
+  if (( ${#missing[@]} == 0 )); then
     echo "Installed macOS app passed all smoke markers."
     exit 0
   fi
@@ -56,5 +56,5 @@ while (( SECONDS < deadline )); do
 done
 
 cat "$log"
-echo "Installed macOS app timed out. Missing markers: \${missing[*]}" >&2
+echo "Installed macOS app timed out. Missing markers: ${missing[*]}" >&2
 exit 1
