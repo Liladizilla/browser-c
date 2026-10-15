@@ -124,3 +124,22 @@ test("page tools expose print, complete-page save, and detached developer tools"
   assert.match(main, /webContents\.savePage\(result\.filePath, "HTMLComplete"\)/);
   assert.match(main, /webContents\.openDevTools\(\{ mode: "detach" \}\)/);
 });
+
+test("settings panel exposes search, appearance, and homepage preferences", () => {
+  assert.match(html, /id="open-settings"/);
+  assert.match(html, /id="settings-panel"[^>]*hidden/);
+  assert.match(html, /id="search-provider"/);
+  assert.match(html, /id="theme-setting"/);
+  assert.match(html, /id="homepage-setting"/);
+  assert.match(renderer, /api\.savePreferences\(preferences\)/);
+  assert.match(renderer, /api\.setSearchProvider\(provider\)/);
+});
+
+test("theme and homepage preferences are validated and persisted in the local profile", () => {
+  assert.match(main, /theme: \["dark", "light", "system"\]\.includes\(data\.theme\)/);
+  assert.match(main, /homePage: typeof data\.homePage === "string" && isWebUrl\(data\.homePage\)/);
+  assert.match(main, /browser:settings:preferences/);
+  assert.match(main, /Object\.assign\(profile, next\)/);
+  assert.match(main, /navigate\(profile\.homePage\)/);
+  assert.match(css, /:root\[data-theme="light"\]/);
+});
