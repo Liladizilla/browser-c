@@ -69,10 +69,11 @@ test("release validator rejects artifacts omitted from the checksum manifest", a
   assert.match(result.stderr, /Checksum manifest must cover every artifact exactly once/);
 });
 
-test("release validator rejects unsafe artifact filenames", async () => {
-  const result = await runValidator("windows", ["Browser-C\\\\unsafe.exe"]);
+test("release validator rejects unsafe checksum paths", async () => {
+  const result = await runValidator("windows", ["Browser-C.exe"], (hashes) =>
+    hashes.get("Browser-C.exe") + "  ../Browser-C.exe\\n");
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /Unsafe artifact filename/);
+  assert.match(result.stderr, /Unsafe checksum filename/);
 });
 
 test("release collector stages package formats and excludes build intermediates", async () => {
