@@ -50,6 +50,10 @@ jobs:
           "$appimage" --appimage-extract
           test -x squashfs-root/AppRun
           test -f squashfs-root/resources/app.asar
+      - name: Launch the extracted AppImage payload and run browser smoke tests
+        env:
+          BROWSER_C_EXECUTABLE: ${{ github.workspace }}/release/squashfs-root/AppRun
+        run: xvfb-run -a node scripts/smoke-installed-linux.mjs
       - name: Upload validated Linux packages
         uses: actions/upload-artifact@v6
         with:
