@@ -9,6 +9,7 @@
 - Selectable, profile-persisted search providers: Google, DuckDuckGo, Bing, and Brave Search.
 - Download prompts, progress/cancellation, bounded completed-download history, reveal-in-folder actions, and warnings before saving known executable/script/installer file types (Browser C does not scan files for malware).
 - Session-scoped prompts for a supported set of website permissions, with unsupported and insecure requests denied by default; temporary grants can be revoked for the active site from the toolbar.
+- Page tools for system print, complete-page HTML save, PDF export, page screenshots, external translation handoff, and detached developer tools. The password vault is manually managed: automatic password capture/autofill, browser extensions, PDF editing, screen recording, and Google account synchronization are not implemented.
 - Private tabs use isolated, non-persistent Electron sessions; downloads saved to disk remain on disk by design.
 - Automated JavaScript checks, cross-platform CI, a Linux Electron integration smoke test, and CodeQL scanning.
 - An initial cross-platform packaging workflow for Linux, Windows, and macOS, with dependency auditing, staging that excludes unpacked build intermediates, non-empty package-format checks, SHA-256 checksum validation, and build-provenance attestations before distributable artifacts are uploaded.
