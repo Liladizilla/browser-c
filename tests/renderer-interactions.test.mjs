@@ -53,7 +53,7 @@ function createHarness() {
   const apiListeners = {};
   const api = new Proxy({}, {
     get(_target, key) {
-      if (key === "onState" || key === "onDownloads" || key === "onFocusAddress" || key === "onFindOpen") {
+      if (key === "onState" || key === "onDownloads" || key === "onFocusAddress" || key === "onFindOpen" || key === "onLibraryOpen" || key === "onEscape") {
         return (callback) => { apiListeners[key] = callback; };
       }
       if (key === "getState") return async () => ({ tabs: [], activeTabId: null, url: "", title: "Ready", loading: false, canGoBack: false, canGoForward: false, zoomFactor: 1 });
@@ -167,4 +167,23 @@ test("Escape closes the library panel and restores focus to its trigger", async 
   assert.equal(h.elements.get("#library-panel").hidden, true);
   assert.equal(trigger.focused, true);
   assert.equal(event.prevented, true);
+});
+
+
+test("library shortcuts from web content open the requested panel", async () => {
+  const h = createHarness();
+  await h.apiListeners.onLibraryOpen("downloads");
+  assert.equal(h.elements.get("#library-title").textContent, "Downloads");
+  await h.apiListeners.onLibraryOpen("history");
+  assert.equal(h.elements.get("#library-title").textContent, "History");
+});
+
+test("Escape relayed from web content closes library and restores focus", async () => {
+  const h = createHarness();
+  h.elements.get("#find-bar").hidden = true;
+  const trigger = h.elements.get("#show-downloads");
+  await trigger.fire("click");
+  h.apiListeners.onEscape();
+  assert.equal(h.elements.get("#library-panel").hidden, true);
+  assert.equal(trigger.focused, true);
 });
