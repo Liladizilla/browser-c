@@ -60,9 +60,10 @@ test("private-mode smoke covers permission and download persistence boundaries",
   assert.match(main, /isPrivate:\s*true/);
 });
 
-test("background navigation smoke uses a unique failed URL to avoid cached failure state", () => {
+test("background navigation smoke exercises isolated error state deterministically", () => {
   assert.match(main, /route === "\/fail" \|\| route === "\/fail-background"/);
-  assert.match(main, /navigate\(fixtureOrigin \+ "\/fail-background", backgroundTab\.id\)/);
+  assert.match(main, /backgroundTab\.view\.webContents\.emit\("did-fail-load", \{\}, -324, "ERR_EMPTY_RESPONSE"/);
+  assert.match(main, /"background navigation failure"/);
 });
 
 test("renderer process exits produce visible recovery feedback", () => {
