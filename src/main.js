@@ -551,7 +551,7 @@ function createWindow() {
             response.end();
             return;
           }
-          if (route === "/fail") {
+          if (route === "/fail" || route === "/fail-background") {
             request.socket.destroy();
             return;
           }
@@ -720,7 +720,7 @@ function createWindow() {
             "background isolation fixture");
           activateTab(fixtureTab.id);
           const foregroundId = activeTabId;
-          await navigate(fixtureOrigin + "/fail", backgroundTab.id).catch(() => {});
+          await navigate(fixtureOrigin + "/fail-background", backgroundTab.id).catch(() => {});
           await waitForFixture(() => !backgroundTab.loading && Boolean(backgroundTab.error), "background navigation failure");
           const backgroundErrorIsolation = {
             foregroundRemainsActive: activeTabId === foregroundId,

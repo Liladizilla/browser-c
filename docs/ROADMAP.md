@@ -60,12 +60,12 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 ## Phase 5 — Release engineering and hardening
 
 - [ ] Build signed/notarized packages where credentials and platform requirements permit.
-- [x] Generate SHA-256 checksums and attest package provenance in the packaging workflow; release notes and a complete dependency inventory remain open.
+- [x] Stage only distributable package files, run dependency audits, validate non-empty package formats and SHA-256 checksums, and attest package provenance; release notes and a complete dependency inventory remain open.
 - [x] Add automated CodeQL code scanning for JavaScript.
 - [x] Add lockfile-based reproducible dependency installation and dependency vulnerability scanning.
 - [x] Add automated secret scanning of pull requests, pushes, and repository history.
 - [ ] Test clean install, upgrade, uninstall, profile retention, and rollback.
-- [x] Add a manual/tag-triggered cross-platform packaging workflow that uploads artifacts only after validation and tests pass.
+- [x] Add a manual/tag-triggered cross-platform packaging workflow that uploads only staged, validated package files after tests and dependency audits pass.
 - [ ] Publish signed/notarized release artifacts; packaging workflow runs still need platform validation.
 
 ## Phase 6 — CharisOS feasibility and integration

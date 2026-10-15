@@ -59,3 +59,8 @@ test("private-mode smoke covers permission and download persistence boundaries",
   assert.match(main, /rememberCompletedDownload\(\{/);
   assert.match(main, /isPrivate:\s*true/);
 });
+
+test("background navigation smoke uses a unique failed URL to avoid cached failure state", () => {
+  assert.match(main, /route === "\/fail" \|\| route === "\/fail-background"/);
+  assert.match(main, /navigate\(fixtureOrigin \+ "\/fail-background", backgroundTab\.id\)/);
+});
