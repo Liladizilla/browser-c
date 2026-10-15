@@ -16,6 +16,11 @@ const directory = path.resolve(process.argv[3] ?? "release");
 const entries = await readdir(directory, { withFileTypes: true });
 const artifacts = entries.filter((entry) => entry.isFile() && entry.name !== "SHA256SUMS.txt").map((entry) => entry.name).sort();
 assert.ok(artifacts.length > 0, "Release directory contains no package artifacts");
+for (const name of artifacts) {
+  assert.ok(!/[\\u0000-\\u001f\\u007f/\\\\]/.test(name), `Unsafe artifact filename: ${JSON.stringify(name)}`);
+  const details = await import("node:fs/promises").then(({ stat }) => stat(path.join(directory, name)));
+  assert.ok(details.size > 0, `Package artifact is empty: ${name}`);
+}
 for (const extension of expectedExtensions[platform]) {
   assert.ok(artifacts.some((name) => name.toLowerCase().endsWith(extension.toLowerCase())),
     `Expected a ${extension} package for ${platform}; found: ${artifacts.join(", ")}`);
@@ -26,7 +31,7 @@ const records = new Map();
 for (const line of manifest.split(/\r?\n/).filter(Boolean)) {
   const match = /^([a-f0-9]{64})  (.+)$/.exec(line);
   assert.ok(match, `Malformed checksum line: ${line}`);
-  assert.ok(!records.has(match[2]), `Duplicate checksum entry: ${match[2]}`);
+  assert.ok(!/[\\u0000-\\u001f\\u007f/\\\\]/.test(match[2]), `Unsafe checksum filename: ${JSON.stringify(match[2])}`);\n  assert.ok(!records.has(match[2]), `Duplicate checksum entry: ${match[2]}`);
   records.set(match[2], match[1]);
 }
 assert.deepEqual([...records.keys()].sort(), artifacts, "Checksum manifest must cover every artifact exactly once");
