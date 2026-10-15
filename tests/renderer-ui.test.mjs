@@ -81,7 +81,7 @@ test("navigation start and successful load clear stale navigation errors", () =>
 test("navigation errors are stored per tab and cleared on a new or successful navigation", () => {
   assert.match(main, /error: tab\.error \|\| ""/);
   assert.match(main, /tab\.loading = true; tab\.error = ""; sendState\(\{ error: "" \}\)/);
-  assert.match(main, /tab\.error = description \|\| "The page could not be loaded\."/);
+  assert.match(main, /tab\.error = navigationErrorMessage\(code, description\)/);
   assert.match(main, /successfulNavigationClearsError/);
 });
 
