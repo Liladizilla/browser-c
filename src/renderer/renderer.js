@@ -31,6 +31,7 @@ let downloadState = [];
 let currentState = { tabs: [], activeTabId: null };
 
 function renderTabs(tabs = []) {
+  const preserveTabFocus = Boolean(tabsNode.contains?.(document.activeElement));
   tabsNode.replaceChildren();
   for (const tab of tabs) {
     const item = document.createElement("div");
@@ -38,6 +39,7 @@ function renderTabs(tabs = []) {
     const select = document.createElement("button");
     select.className = "tab-select";
     select.type = "button";
+    select.setAttribute("data-tab-id", String(tab.id));
     select.title = (tab.isPrivate ? "Private tab · " : "") + (tab.url || "New Tab");
     select.setAttribute("role", "tab");
     select.setAttribute("aria-selected", String(tab.active));
@@ -54,7 +56,22 @@ function renderTabs(tabs = []) {
     item.append(select, close);
     tabsNode.append(item);
   }
+  if (preserveTabFocus) tabsNode.querySelector('[role="tab"][aria-selected="true"]')?.focus();
 }
+tabsNode.addEventListener("keydown", (event) => {
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  const tabButtons = [...tabsNode.querySelectorAll('[role="tab"]')];
+  if (tabButtons.length < 2) return;
+  const currentIndex = tabButtons.indexOf(document.activeElement);
+  if (currentIndex < 0) return;
+  const nextIndex = event.key === "Home" ? 0
+    : event.key === "End" ? tabButtons.length - 1
+      : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + tabButtons.length) % tabButtons.length;
+  event.preventDefault();
+  const nextTab = tabButtons[nextIndex];
+  nextTab.focus();
+  api.activateTab(Number(nextTab.dataset.tabId));
+});
 function applyState(state = {}) {
   currentState = { ...currentState, ...state };
   renderTabs(currentState.tabs || []);
