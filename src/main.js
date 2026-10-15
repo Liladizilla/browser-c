@@ -136,8 +136,15 @@ async function navigate(rawInput, tabId = activeTabId) {
   if (!tab) throw new Error("The selected tab no longer exists.");
   const destination = resolveAddress(rawInput);
   if (!isWebUrl(destination)) throw new TypeError("Only HTTP and HTTPS destinations are allowed.");
-  tab.url = destination; tab.loading = true; sendState();
-  await tab.view.webContents.loadURL(destination);
+  tab.url = destination; tab.loading = true; tab.error = ""; sendState();
+  try {
+    await tab.view.webContents.loadURL(destination);
+  } catch (error) {
+    tab.loading = false;
+    tab.error = error instanceof Error ? error.message : "The page could not be loaded.";
+    if (tab.id === activeTabId) sendState({ error: tab.error, url: destination });
+    throw error;
+  }
   scheduleSessionSave();
   return destination;
 }
