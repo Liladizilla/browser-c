@@ -34,14 +34,15 @@ function renderTabs(tabs = []) {
   tabsNode.replaceChildren();
   for (const tab of tabs) {
     const item = document.createElement("div");
-    item.className = "tab" + (tab.active ? " active" : "");
+    item.className = "tab" + (tab.active ? " active" : "") + (tab.isPrivate ? " private-tab" : "");
     const select = document.createElement("button");
     select.className = "tab-select";
     select.type = "button";
-    select.title = tab.url || "New Tab";
+    select.title = (tab.isPrivate ? "Private tab · " : "") + (tab.url || "New Tab");
     select.setAttribute("role", "tab");
     select.setAttribute("aria-selected", String(tab.active));
     select.textContent = tab.loading && (!tab.title || tab.title === "New Tab") ? "Loading…" : tab.title;
+    if (tab.isPrivate) select.setAttribute("aria-label", "Private tab: " + (tab.title || "New Tab"));
     select.addEventListener("click", () => api.activateTab(tab.id));
     const close = document.createElement("button");
     close.className = "tab-close";
@@ -63,7 +64,7 @@ function applyState(state = {}) {
   reload.textContent = state.loading ? "×" : "↻";
   reload.title = state.loading ? "Stop loading" : "Reload";
   reload.setAttribute("aria-label", reload.title);
-  status.textContent = (state.isPrivate ? "Private session · " : "") + (state.error ? "Load error: " + state.error : state.loading ? "Loading…" : state.title || "Ready");
+  status.textContent = (state.isPrivate ? "Private session · history and tabs are not saved · " : "") + (state.error ? "Load error: " + state.error : state.loading ? "Loading…" : state.title || "Ready");
   bookmarkCurrent.disabled = Boolean(state.isPrivate);
   bookmarkCurrent.title = state.isPrivate ? "Bookmarks are disabled in private tabs" : "Bookmark current page";
   document.body.classList.toggle("private-mode", Boolean(state.isPrivate));
