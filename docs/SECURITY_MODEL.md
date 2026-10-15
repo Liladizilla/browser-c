@@ -12,7 +12,7 @@
 
 ## Current limitations
 
-This is an early prototype, not a security-reviewed replacement for a mature browser. Private-mode crash/restart and packaged-build leakage tests, full OS runtime smoke tests, certificate UI, password storage, extension support, and hardened installer/update channels are still outstanding. The Linux smoke test currently checks cookie/storage isolation, session/history exclusions, in-memory permission-grant isolation, private-download persistence exclusion, and private-cookie cleanup on close. Files explicitly downloaded from a private tab are saved to the path selected by the user and remain on disk; private mode does not erase those files or conceal network activity from websites, employers, ISPs, or network administrators.
+This is an early prototype, not a security-reviewed replacement for a mature browser. Private-mode crash/restart and packaged-build leakage tests, full OS runtime smoke tests, a dedicated certificate error interstitial, proxy/captive-portal handling, password storage, extension support, and hardened installer/update channels are still outstanding. TLS certificate errors are explicitly rejected and common certificate, DNS, and offline failures now produce human-readable recovery messages; there is no option to bypass an invalid certificate. The Linux smoke test currently checks cookie/storage isolation, session/history exclusions, in-memory permission-grant isolation, private-download persistence exclusion, and private-cookie cleanup on close. Files explicitly downloaded from a private tab are saved to the path selected by the user and remain on disk; private mode does not erase those files or conceal network activity from websites, employers, ISPs, or network administrators.
 
 ## Review checklist
 
