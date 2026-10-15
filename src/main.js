@@ -7,7 +7,7 @@ import { isWebUrl, resolveAddress } from "./navigation.js";
 import { canBookmarkTab, persistableTabs, shouldCancelDownloadOnTabClose, shouldPersistCompletedDownload, shouldRecordHistory } from "./privacy-policy.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const CHROME_HEIGHT = 178;
+const CHROME_HEIGHT = 136;
 const SESSION_VERSION = 1;
 const PROFILE_VERSION = 1;
 const MAX_HISTORY_ITEMS = 500;
@@ -386,6 +386,32 @@ function createWindow() {
     tabs = [];
     activeTabId = null;
   });
+  if (process.env.BROWSER_C_SMOKE === "1") {
+    windowRef.webContents.once("did-finish-load", async () => {
+      try {
+        const result = await windowRef.webContents.executeJavaScript(`(() => {
+          const selectors = [
+            ".toolbar", "#tabs", "#address", "#new-tab", "#new-private-tab",
+            "#show-bookmarks", "#show-history", "#show-downloads", "#find-bar",
+            "#zoom-reset", "#library-panel", "#status"
+          ];
+          const missing = selectors.filter((selector) => !document.querySelector(selector));
+          return {
+            missing,
+            toolbarHeight: getComputedStyle(document.querySelector(".toolbar")).height,
+            bridgeAvailable: Boolean(window.browserC)
+          };
+        })()`);
+        if (result.missing.length || result.toolbarHeight !== "136px" || !result.bridgeAvailable) {
+          throw new Error("UI smoke assertions failed: " + JSON.stringify(result));
+        }
+        console.log("BROWSER_C_UI_SMOKE_PASS " + JSON.stringify(result));
+      } catch (error) {
+        console.error("BROWSER_C_UI_SMOKE_FAIL " + (error?.stack || error));
+        app.exit(1);
+      }
+    });
+  }
   windowRef.loadFile(chromePath);
 }
 ipcMain.handle("browser:navigate", async (_event, input) => {

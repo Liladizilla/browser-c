@@ -55,8 +55,8 @@ test("history records only web URLs and remains bounded", () => {
   assert.match(main, /MAX_HISTORY_ITEMS/);
   assert.match(main, /recordHistory\(tab\)/);
 });
-test("content view layout accounts for the expanded browser toolbar", () => {
-  assert.match(main, /CHROME_HEIGHT = 178/);
+test("content view layout accounts for the compact browser toolbar", () => {
+  assert.match(main, /CHROME_HEIGHT = 136/);
 });
 
 test("unsupported session versions fall back to a valid empty session model", () => {

@@ -13,7 +13,7 @@
     "start": "electron .",
     "test": "node --test",
     "validate": "node scripts/validate-repo.mjs",
-    "check": "node --check src/main.js && node --check src/preload.cjs && node --check src/navigation.js && node --check src/privacy-policy.js && node --check src/renderer/renderer.js",
+    "check": "node --check src/main.js && node --check src/preload.cjs && node --check src/navigation.js && node --check src/privacy-policy.js && node --check src/renderer/renderer.js && node --check scripts/smoke-electron.mjs",
     "smoke": "node scripts/smoke-electron.mjs",
     "checksums": "node scripts/write-checksums.mjs release"
   },
