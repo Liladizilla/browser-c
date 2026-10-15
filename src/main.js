@@ -1,12 +1,15 @@
 import { app, BrowserWindow, WebContentsView, ipcMain } from "electron";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { isWebUrl, resolveAddress } from "./navigation.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CHROME_HEIGHT = 112;
 const SESSION_VERSION = 1;
+const PROFILE_VERSION = 1;
+const MAX_HISTORY_ITEMS = 500;
+const MAX_BOOKMARKS = 200;
 let windowRef;
 let tabs = [];
 let activeTabId = null;
@@ -14,6 +17,7 @@ let nextTabId = 1;
 let sessionSaveTimer;
 let quitAfterSessionSave = false;
 let lastSessionSnapshot = null;
+let profile = { version: PROFILE_VERSION, bookmarks: [], history: [] };
 
 const activeTab = () => tabs.find((tab) => tab.id === activeTabId) ?? null;
 function tabSnapshot(tab) {
@@ -73,6 +77,32 @@ async function readSession() {
     return { urls, activeIndex };
   } catch { return { urls: [], activeIndex: 0 }; }
 }
+async function persistProfile() {
+  const file = path.join(app.getPath("userData"), "profile.json");
+  const temporary = file + ".tmp";
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(temporary, JSON.stringify(profile, null, 2), { mode: 0o600 });
+  await rename(temporary, file);
+}
+async function loadProfile() {
+  try {
+    const data = JSON.parse(await readFile(path.join(app.getPath("userData"), "profile.json"), "utf8"));
+    if (data.version !== PROFILE_VERSION) return;
+    profile = {
+      version: PROFILE_VERSION,
+      bookmarks: Array.isArray(data.bookmarks) ? data.bookmarks
+        .filter((item) => item && isWebUrl(item.url) && typeof item.title === "string").slice(0, MAX_BOOKMARKS) : [],
+      history: Array.isArray(data.history) ? data.history
+        .filter((item) => item && isWebUrl(item.url) && typeof item.visitedAt === "string").slice(0, MAX_HISTORY_ITEMS) : []
+    };
+  } catch { profile = { version: PROFILE_VERSION, bookmarks: [], history: [] }; }
+}
+function recordHistory(tab) {
+  if (!isWebUrl(tab.url)) return;
+  profile.history.unshift({ url: tab.url, title: tab.title || tab.url, visitedAt: new Date().toISOString() });
+  profile.history = profile.history.slice(0, MAX_HISTORY_ITEMS);
+  persistProfile().catch(() => {});
+}
 async function navigate(rawInput, tabId = activeTabId) {
   const tab = tabs.find((candidate) => candidate.id === tabId);
   if (!tab) throw new Error("The selected tab no longer exists.");
@@ -92,9 +122,15 @@ function attachTabEvents(tab) {
     if (isMainFrame && isWebUrl(url)) tab.url = url;
     tab.loading = true; sendState();
   });
-  contents.on("page-title-updated", (_event, title) => { tab.title = title || "New Tab"; sendState(); });
+  contents.on("page-title-updated", (_event, title) => {
+    tab.title = title || "New Tab";
+    const recent = profile.history.find((item) => item.url === tab.url);
+    if (recent) { recent.title = tab.title; persistProfile().catch(() => {}); }
+    sendState();
+  });
   contents.on("did-navigate", (_event, url) => {
     tab.url = url; tab.title = contents.getTitle() || "New Tab"; tab.loading = false;
+    recordHistory(tab);
     sendState(); scheduleSessionSave();
   });
   contents.on("did-navigate-in-page", (_event, url) => { tab.url = url; sendState(); scheduleSessionSave(); });
@@ -199,6 +235,23 @@ ipcMain.handle("browser:get-state", () => {
     canGoBack: Boolean(tab && tab.view.webContents.canGoBack()), canGoForward: Boolean(tab && tab.view.webContents.canGoForward()),
     loading: Boolean(tab?.loading) };
 });
+ipcMain.handle("browser:bookmarks:get", () => profile.bookmarks);
+ipcMain.handle("browser:bookmarks:toggle", async (_event, item) => {
+  if (!item || !isWebUrl(item.url)) return { ok: false, error: "Only HTTP and HTTPS pages can be bookmarked." };
+  const index = profile.bookmarks.findIndex((bookmark) => bookmark.url === item.url);
+  if (index >= 0) profile.bookmarks.splice(index, 1);
+  else profile.bookmarks.unshift({ url: item.url, title: String(item.title || item.url).slice(0, 300), createdAt: new Date().toISOString() });
+  profile.bookmarks = profile.bookmarks.slice(0, MAX_BOOKMARKS);
+  await persistProfile();
+  return { ok: true, bookmarked: index < 0, bookmarks: profile.bookmarks };
+});
+ipcMain.handle("browser:history:get", () => profile.history.slice(0, 100));
+ipcMain.handle("browser:history:clear", async () => {
+  profile.history = [];
+  await persistProfile();
+  return { ok: true };
+});
+
 function restoreTabs(session) {
   if (session.urls.length) {
     for (const url of session.urls) createTab(url);
@@ -208,6 +261,7 @@ function restoreTabs(session) {
   sendState();
 }
 app.whenReady().then(async () => {
+  await loadProfile();
   createWindow();
   restoreTabs(await readSession());
   app.on("activate", async () => {
@@ -221,6 +275,6 @@ app.on("before-quit", (event) => {
   if (quitAfterSessionSave) return;
   event.preventDefault();
   if (sessionSaveTimer) clearTimeout(sessionSaveTimer);
-  saveSession().catch(() => {}).finally(() => { quitAfterSessionSave = true; app.quit(); });
+  Promise.all([saveSession(), persistProfile()]).catch(() => {}).finally(() => { quitAfterSessionSave = true; app.quit(); });
 });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
