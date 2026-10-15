@@ -31,6 +31,7 @@ let downloadState = [];
 let currentState = { tabs: [], activeTabId: null };
 
 function renderTabs(tabs = []) {
+  const preserveTabFocus = tabsNode.contains(document.activeElement);
   tabsNode.replaceChildren();
   for (const tab of tabs) {
     const item = document.createElement("div");
@@ -55,6 +56,7 @@ function renderTabs(tabs = []) {
     item.append(select, close);
     tabsNode.append(item);
   }
+  if (preserveTabFocus) tabsNode.querySelector('[role="tab"][aria-selected="true"]')?.focus();
 }
 tabsNode.addEventListener("keydown", (event) => {
   if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
