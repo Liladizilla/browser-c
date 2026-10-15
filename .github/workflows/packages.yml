@@ -1,0 +1,56 @@
+name: Desktop packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: packages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Package (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            os: ubuntu-latest
+            args: --linux AppImage deb
+          - platform: windows
+            os: windows-latest
+            args: --win nsis
+          - platform: macos
+            os: macos-latest
+            args: --mac dmg zip
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Install application dependencies
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Run repository validation
+        run: npm run validate
+      - name: Check JavaScript syntax
+        run: npm run check
+      - name: Run automated tests
+        run: npm test
+      - name: Build platform packages
+        run: npx --yes electron-builder@26.0.12 ${{ matrix.args }}
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: browser-c-${{ matrix.platform }}
+          path: release/*
+          if-no-files-found: error
+          retention-days: 14
