@@ -88,3 +88,11 @@ test("Linux package workflow installs and launches the packaged application", ()
   assert.ok(packageSmoke.includes("xvfb-run -a node scripts/smoke-installed-linux.mjs"));
   assert.ok(packageSmoke.includes("retention-days: 7"));
 });
+
+
+test("Linux package workflow launches the extracted AppImage payload", () => {
+  assert.ok(packageSmoke.includes("APPDIR: ${{ github.workspace }}/release/squashfs-root"));
+  assert.ok(packageSmoke.includes("BROWSER_C_EXECUTABLE: ${{ github.workspace }}/release/squashfs-root/AppRun"));
+  assert.ok(packageSmoke.includes("xvfb-run -a node scripts/smoke-installed-linux.mjs"));
+  assert.ok(packageSmoke.includes("test -x squashfs-root/AppRun"));
+});
