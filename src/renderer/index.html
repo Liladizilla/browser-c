@@ -26,7 +26,17 @@
       </form>
       <button id="home" title="Home" aria-label="Home">⌂</button>
     </div>
+    <div class="library-controls">
+      <button id="bookmark-current" title="Bookmark current page" aria-label="Bookmark current page">☆ Bookmark</button>
+      <button id="show-bookmarks" title="Show bookmarks">Bookmarks</button>
+      <button id="show-history" title="Show browsing history">History</button>
+    </div>
     <div id="status" role="status" aria-live="polite">Starting Browser C…</div>
   </header>
+  <section id="library-panel" class="library-panel" hidden aria-label="Browser library">
+    <div class="library-heading"><strong id="library-title">Bookmarks</strong><button id="close-library" aria-label="Close panel">×</button></div>
+    <div id="library-list" class="library-list"></div>
+    <button id="clear-history" class="clear-history" hidden>Clear history</button>
+  </section>
 </body>
 </html>
