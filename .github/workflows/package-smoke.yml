@@ -36,6 +36,11 @@ jobs:
         run: node scripts/validate-release.mjs linux release/artifacts
       - name: Inspect Debian package metadata
         run: dpkg-deb --info release/artifacts/*.deb
+      - name: Install the Debian package and run the installed browser
+        run: |
+          sudo apt-get install -y ./release/artifacts/*.deb
+          command -v browser-c
+          xvfb-run -a node scripts/smoke-installed-linux.mjs
       - name: Extract AppImage without requiring FUSE
         working-directory: release
         run: |

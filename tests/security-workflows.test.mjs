@@ -80,3 +80,11 @@ test("Linux package smoke builds and inspects real distributable payloads", () =
 test("Linux Debian package maintainer metadata is configured", () => {
   assert.match(pkg.build.linux.maintainer, /^[^<>]+ <[^<>@\s]+@[^<>\s]+>$/);
 });
+
+
+test("Linux package workflow installs and launches the packaged application", () => {
+  assert.ok(packageSmoke.includes("sudo apt-get install -y ./release/artifacts/*.deb"));
+  assert.ok(packageSmoke.includes("command -v browser-c"));
+  assert.ok(packageSmoke.includes("xvfb-run -a node scripts/smoke-installed-linux.mjs"));
+  assert.ok(packageSmoke.includes("retention-days: 7"));
+});
