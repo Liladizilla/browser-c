@@ -1,6 +1,7 @@
 :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #101214; color: #f1f2f3; font-synthesis: none; }
 * { box-sizing: border-box; }
-html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+html, body { margin: 0; width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+body { min-width: 0; min-height: 0; }
 body { background: #101214; }
 .toolbar { position: relative; z-index: 1; height: 136px; padding: 8px 12px 18px; background: #171a1d; border-bottom: 1px solid #30353a; display: grid; grid-template-rows: 34px 34px 24px; gap: 5px; }
 .tab-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -49,7 +50,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #d6a64c; outline-
 #find-query { flex: 1; min-width: 0; height: 25px; padding: 0 8px; border: 1px solid #343a40; border-radius: 6px; outline: 0; background: #0e1012; color: #f2f3f4; font: inherit; font-size: 11px; }
 #find-query:focus { border-color: #9a7836; }
 .find-bar button { width: 25px; flex-basis: 25px; height: 25px; font-size: 13px; }
-.library-panel { position: absolute; z-index: 5; top: 136px; left: 12px; width: min(420px, calc(100vw - 24px)); max-height: calc(100vh - 160px); overflow: auto; padding: 10px; border: 1px solid #3b4147; border-radius: 10px; background: #191d21; color: #f1f2f3; box-shadow: 0 10px 30px #0008; }
+.library-panel { position: absolute; z-index: 5; top: 136px; left: 12px; width: min(420px, calc(100vw - 24px)); max-height: min(70vh, calc(100dvh - 152px)); min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 10px; border: 1px solid #3b4147; border-radius: 10px; background: #191d21; color: #f1f2f3; box-shadow: 0 10px 30px #0008; }
 .library-panel[hidden] { display: none; }
 .library-heading { display: flex; justify-content: space-between; align-items: center; padding: 0 0 8px; border-bottom: 1px solid #343a40; font-size: 12px; }
 .library-heading button { width: 24px; flex-basis: 24px; }
@@ -99,7 +100,7 @@ body.private-mode .security-mark { color: #b69be0; }
 .tools-menu-panel button { width: 100%; flex: 0 0 auto; height: 30px; padding: 0 9px; text-align: left; font-size: 11px; }
 
 /* Browser settings are functional controls, not a mock settings screenshot. */
-.settings-panel { position: absolute; z-index: 6; top: 136px; right: 12px; width: min(360px, calc(100vw - 24px)); max-height: calc(100vh - 160px); overflow: auto; padding: 12px; border: 1px solid #3b4147; border-radius: 10px; background: #191d21; color: #f1f2f3; }
+.settings-panel { position: absolute; z-index: 6; top: 136px; right: 12px; width: min(360px, calc(100vw - 24px)); max-height: min(70vh, calc(100dvh - 152px)); min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 12px; border: 1px solid #3b4147; border-radius: 10px; background: #191d21; color: #f1f2f3; }
 .settings-panel[hidden] { display: none; }
 .settings-form { display: grid; gap: 7px; padding-top: 10px; }
 .settings-form label { color: #aab1b8; font-size: 11px; }

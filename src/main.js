@@ -26,6 +26,7 @@ const PERMISSION_LABELS = Object.freeze({
   pointerLock: "pointer lock"
 });
 let windowRef;
+let chromeOverlayOpen = false;
 let tabs = [];
 let activeTabId = null;
 let nextTabId = 1;
@@ -108,7 +109,7 @@ function layoutTabs() {
   if (!windowRef) return;
   const { width, height } = windowRef.getContentBounds();
   for (const tab of tabs) {
-    tab.view.setBounds(tab.id === activeTabId
+    tab.view.setBounds(tab.id === activeTabId && !chromeOverlayOpen
       ? { x: 0, y: CHROME_HEIGHT, width: Math.max(0, width), height: Math.max(0, height - CHROME_HEIGHT) }
       : { x: 0, y: CHROME_HEIGHT, width: 0, height: 0 });
   }
@@ -354,7 +355,26 @@ function attachPermissionHandlers(browserSession) {
 }
 function attachTabEvents(tab) {
   const contents = tab.view.webContents;
-  contents.setWindowOpenHandler(() => ({ action: "deny" }));
+  contents.setWindowOpenHandler(({ url }) => {
+    if (url !== "about:blank" && !isWebUrl(url)) return { action: "deny" };
+    return {
+      action: "allow",
+      overrideBrowserWindowOptions: {
+        parent: windowRef, width: 900, height: 700, minWidth: 420, minHeight: 360,
+        autoHideMenuBar: true,
+        webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true }
+      }
+    };
+  });
+  contents.on("did-create-window", (popup) => {
+    popup.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+    popup.webContents.on("will-navigate", (event, url) => {
+      if (url !== "about:blank" && !isWebUrl(url)) event.preventDefault();
+    });
+    popup.webContents.on("will-redirect", (event, url) => {
+      if (!isWebUrl(url)) event.preventDefault();
+    });
+  });
   contents.on("will-navigate", (event, url) => { if (!isWebUrl(url)) event.preventDefault(); });
   contents.on("will-redirect", (event, url) => { if (!isWebUrl(url)) event.preventDefault(); });
   contents.on("did-start-navigation", (_event, url, _inPlace, isMainFrame) => {
@@ -474,6 +494,11 @@ function closeTab(id = activeTabId) {
   else if (tab.id === activeTabId) activeTabId = tabs[Math.min(index, tabs.length - 1)].id;
   layoutTabs(); sendState(); scheduleSessionSave(); return { ok: true, activeTabId };
 }
+ipcMain.on("browser:overlay:set", (_event, open) => {
+  chromeOverlayOpen = Boolean(open);
+  layoutTabs();
+});
+
 function createWindow() {
   windowRef = new BrowserWindow({
     width: 1280, height: 840, minWidth: 520, minHeight: 480, title: "Browser C", backgroundColor: "#101214", frame: false,

@@ -60,6 +60,10 @@ let libraryTrigger = null;
 let downloadState = [];
 let currentState = { tabs: [], activeTabId: null };
 
+function syncChromeOverlay() {
+  api.setChromeOverlayOpen(!settingsPanel.hidden || !passwordPanel.hidden || !libraryPanel.hidden);
+}
+
 function renderTabs(tabs = []) {
   const preserveTabFocus = Boolean(tabsNode.contains?.(document.activeElement));
   tabsNode.replaceChildren();
@@ -219,6 +223,9 @@ async function showLibrary(mode, trigger = null) {
   libraryMode = mode;
   if (trigger) libraryTrigger = trigger;
   libraryPanel.hidden = false;
+  settingsPanel.hidden = true;
+  passwordPanel.hidden = true;
+  syncChromeOverlay();
   for (const [trigger, triggerMode] of [[showBookmarks, "bookmarks"], [showHistory, "history"], [showDownloads, "downloads"]]) {
     trigger.setAttribute("aria-expanded", String(mode === triggerMode));
   }
@@ -299,6 +306,7 @@ showHistory.addEventListener("click", () => showLibrary("history", showHistory))
 showDownloads.addEventListener("click", () => showLibrary("downloads", showDownloads));
 function closePasswordPanel() {
   passwordPanel.hidden = true;
+  syncChromeOverlay();
   openPasswords.setAttribute("aria-expanded", "false");
   passwordSecret.value = "";
   passwordList.replaceChildren();
@@ -369,6 +377,7 @@ openPasswords.addEventListener("click", async () => {
   settingsPanel.hidden = true;
   libraryPanel.hidden = true;
   passwordPanel.hidden = false;
+  syncChromeOverlay();
   openPasswords.setAttribute("aria-expanded", "true");
   passwordSite.value = /^https:\/\//i.test(currentState.url || "") ? currentState.url : "";
   await renderPasswordVault();
@@ -388,12 +397,16 @@ function applyTheme(theme) {
 }
 function closeSettingsPanel() {
   settingsPanel.hidden = true;
+  syncChromeOverlay();
   openSettings.setAttribute("aria-expanded", "false");
   lastSettingsTrigger?.focus();
 }
 openSettings.addEventListener("click", () => {
   lastSettingsTrigger = openSettings;
+  passwordPanel.hidden = true;
+  libraryPanel.hidden = true;
   settingsPanel.hidden = false;
+  syncChromeOverlay();
   openSettings.setAttribute("aria-expanded", "true");
   closeSettings.focus();
 });
@@ -437,6 +450,7 @@ api.onDownloads((items) => {
 api.getDownloads().then((items) => { downloadState = items; }).catch(() => {});
 function closeLibraryPanel() {
   libraryPanel.hidden = true;
+  syncChromeOverlay();
   for (const trigger of [showBookmarks, showHistory, showDownloads]) {
     trigger.setAttribute("aria-expanded", "false");
   }
