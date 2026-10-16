@@ -10,20 +10,20 @@ Pre-release installers and release notes are published on the [GitHub Releases p
 - **Windows:** x64 NSIS installer (`.exe`).
 - **macOS:** DMG installer or ZIP app bundle. Signing/notarization and manual device validation are not yet complete.
 
-See [Installation and upgrade guide](docs/INSTALLATION.md) for setup, checksum verification, troubleshooting, and upgrade notes.
+See the [Installation and upgrade guide](docs/INSTALLATION.md) for setup, checksum verification, troubleshooting, and upgrade notes. The official project site is [browser-c.vercel.app](https://browser-c.vercel.app).
 
 ## Current capabilities
 
 - Multi-tab browsing with keyboard shortcuts and session restore.
 - HTTP/HTTPS address navigation, bookmarks, browsing history, and page find/zoom controls.
 - Selectable, profile-persisted search providers: Google, DuckDuckGo, Bing, and Brave Search.
-- Download prompts, progress/cancellation, bounded completed-download history, reveal-in-folder actions, and warnings before saving known executable/script/installer file types (Browser C does not scan files for malware).
+- Download prompts, progress/cancellation, bounded completed-download history, reveal-in-folder actions, and warnings before saving known executable/script/installer file types. Browser C does not scan files for malware.
 - Session-scoped prompts for a supported set of website permissions, with unsupported and insecure requests denied by default; temporary grants can be revoked for the active site from the toolbar.
-- Private tabs use isolated, non-persistent Electron sessions; downloads saved to disk remain on disk by design.
+- Private tabs use isolated, non-persistent Electron sessions. Files explicitly saved to disk remain on disk by design.
 - Automated JavaScript checks, cross-platform CI, a Linux Electron integration smoke test, and CodeQL scanning.
-- An initial cross-platform packaging workflow for Linux, Windows, and macOS, with dependency auditing, staging that excludes unpacked build intermediates, non-empty package-format checks, SHA-256 checksum validation, and build-provenance attestations before distributable artifacts are uploaded.
+- Cross-platform packaging workflows for Linux, Windows, and macOS, dependency auditing, package-format validation, SHA-256 checksums, an SPDX SBOM, and build-provenance attestations.
 
-This remains a prototype, not a finished or security-certified daily-use browser. The Linux Electron smoke test now exercises local back/forward navigation, reload/stop, redirect handling, failed-navigation recovery, and checks that private tabs use a separate non-persistent session and are excluded from session/history persistence. The smoke suite also checks connection-refused recovery and recovery after a crashed page renderer. These checks do not prove that all websites, downloads, permissions, GPU drivers, codecs, certificate failures, or platform configurations work correctly. CI now silently installs and launches the Windows NSIS build, launches the macOS app bundle extracted from ZIP, and mounts the macOS DMG, copies its app bundle to a separate install location, and launches it through the same UI/navigation/recovery smoke suite. This does not cover signing/notarization, broader privacy-leakage testing, upgrades, uninstall, or profile-retention behavior. The packaging workflow now checks that each platform produced its expected package formats and that every artifact matches its SHA-256 manifest. Do not treat current CI as a claim that the browser is perfect or ready for sensitive daily use.
+This remains a prototype, not a finished or security-certified daily-use browser. CI exercises a subset of UI, navigation, privacy, and recovery behaviors; it cannot prove that all websites, downloads, permissions, GPU drivers, codecs, certificate failures, or platform configurations work correctly. Signing/notarization, broader privacy-leakage testing, upgrades, uninstall, and profile-retention behavior are not fully validated. Do not treat green CI as proof that the browser is perfect or suitable for sensitive daily use.
 
 ## Security baseline
 
@@ -33,7 +33,19 @@ This remains a prototype, not a finished or security-certified daily-use browser
 - Navigation is restricted to HTTP and HTTPS.
 - Website permissions are denied unless an explicitly supported permission is allowed for the current app session.
 
-Read [Installation](docs/INSTALLATION.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security model](docs/SECURITY_MODEL.md), [Release engineering](docs/RELEASES.md), and [Changelog](CHANGELOG.md).
+## Policies and project documentation
+
+- [Privacy notice](PRIVACY.md)
+- [Terms of use](TERMS.md)
+- [Security policy](SECURITY.md)
+- [Security model](docs/SECURITY_MODEL.md)
+- [Third-party notices](THIRD_PARTY_NOTICES.md)
+- [Installation and upgrade](docs/INSTALLATION.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Release engineering](docs/RELEASES.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## Development
 
@@ -47,7 +59,7 @@ npm run check
 npm start
 ```
 
-The committed `package-lock.json` pins the dependency graph for repeatable installs. Do not treat green unit tests or the Linux startup smoke test as proof that all websites, GPU drivers, codecs, private-session behavior, or platform configurations work.
+The committed `package-lock.json` pins the dependency graph for repeatable installs. Do not treat unit tests or startup smoke tests as proof that all websites, GPU drivers, codecs, private-session behavior, or platform configurations work.
 
 ## Platform goals
 
