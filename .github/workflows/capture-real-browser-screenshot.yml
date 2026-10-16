@@ -1,0 +1,90 @@
+name: Capture real Browser C screenshot
+
+on:
+  push:
+    branches:
+      - capture-real-browser-screenshot
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out Browser C
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install screenshot utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xdotool imagemagick
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Launch Browser C and capture its actual window
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          xvfb-run -a -s "-screen 0 1600x1000x24 -nolisten tcp" bash -lc '
+            set -euo pipefail
+            npm start -- --no-sandbox > /tmp/browser-c.log 2>&1 &
+            app_pid=$!
+            cleanup() { kill "$app_pid" 2>/dev/null || true; }
+            trap cleanup EXIT
+
+            window_id=""
+            for attempt in $(seq 1 90); do
+              window_id=$(xdotool search --onlyvisible --name "^Browser C$" 2>/dev/null | head -n 1 || true)
+              if [ -n "$window_id" ]; then break; fi
+              if ! kill -0 "$app_pid" 2>/dev/null; then
+                cat /tmp/browser-c.log
+                exit 1
+              fi
+              sleep 1
+            done
+            if [ -z "$window_id" ]; then
+              cat /tmp/browser-c.log
+              echo "Browser C window did not appear."
+              exit 1
+            fi
+
+            sleep 3
+            xdotool windowfocus --sync "$window_id" || true
+            xdotool key --clearmodifiers ctrl+l
+            xdotool type --clearmodifiers --delay 35 "https://example.com"
+            xdotool key Return
+            sleep 8
+
+            # Capture the actual Electron application window, not a designed mockup.
+            import -window "$window_id" "$GITHUB_WORKSPACE/artifacts/browser-c-real-window.png"
+            identify "$GITHUB_WORKSPACE/artifacts/browser-c-real-window.png"
+            test -s "$GITHUB_WORKSPACE/artifacts/browser-c-real-window.png"
+          '
+
+      - name: Upload genuine screenshot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-c-real-window-screenshot
+          path: artifacts/browser-c-real-window.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Preserve launch logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-c-screenshot-diagnostics
+          path: /tmp/browser-c.log
+          if-no-files-found: ignore
+          retention-days: 7
