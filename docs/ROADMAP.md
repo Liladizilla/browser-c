@@ -71,6 +71,7 @@ Milestones describe work to do, not features that already exist. Checkboxes refl
 - [x] Add a manual/tag-triggered cross-platform packaging workflow that uploads only staged, validated package files after tests and dependency audits pass.
 - [x] Add Windows/macOS package-smoke CI to build distributables, validate checksums/SBOMs, inspect artifacts, install and launch the Windows NSIS package, launch the macOS app bundle from ZIP and from a mounted/copied DMG, and retain artifacts; upgrade/uninstall/profile-retention/rollback and manual device testing remain open.
 - [ ] Publish signed/notarized release artifacts; packaging workflow runs still need platform validation.
+- [x] Document prerelease installation, checksum verification, release limitations, and the v0.2.1 maintenance changes.
 
 ## Phase 6 — CharisOS feasibility and integration
 
