@@ -1,5 +1,4 @@
-import { access, readFile } from 'node:fs/promises';
-import { constants } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 
 const requiredFiles = [
   'README.md', 'LICENSE', 'CONTRIBUTING.md', 'SECURITY.md',
@@ -12,7 +11,8 @@ const requiredFiles = [
 const failures = [];
 for (const file of requiredFiles) {
   try {
-    await access(file, constants.R_OK);
+    // Open the file directly. A separate access() check introduces a TOCTOU race:
+    // the path can change between the check and this read.
     const content = await readFile(file, 'utf8');
     if (!content.trim()) failures.push(file + ': file is empty');
   } catch {
