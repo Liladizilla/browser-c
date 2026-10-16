@@ -2,7 +2,7 @@
 
 Notable user-facing changes are recorded here. This project is an early prerelease; entries describe changes made, not a guarantee that every feature works on every platform.
 
-## [0.2.1] - 2026-10-16
+## [Unreleased]\n\n### Documentation\n- Added privacy notice, terms of use, third-party notices, and refreshed security/contributor guidance.\n- Updated the project website with metadata, a sitemap, crawler policy, and dedicated privacy, terms, and security pages.\n\n## [0.2.1] - 2026-10-16
 
 ### Fixed
 - Website popup windows are no longer unconditionally blocked; supported sign-in flows can open restricted child windows.
