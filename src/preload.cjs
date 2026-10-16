@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("browserC", Object.freeze({
   navigate: (input) => ipcRenderer.invoke("browser:navigate", String(input ?? "")),
+  setChromeOverlayOpen: (open) => ipcRenderer.send("browser:overlay:set", Boolean(open)),
   minimizeWindow: () => ipcRenderer.invoke("browser:window:minimize"),
   toggleMaximizeWindow: () => ipcRenderer.invoke("browser:window:toggle-maximize"),
   closeWindow: () => ipcRenderer.invoke("browser:window:close"),
