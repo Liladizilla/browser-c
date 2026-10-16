@@ -73,3 +73,40 @@ jobs:
           path: release/artifacts/*
           if-no-files-found: error
           retention-days: 14
+
+  publish-release:
+    name: Assemble downloadable GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download all validated platform packages
+        uses: actions/download-artifact@v7
+        with:
+          pattern: browser-c-*
+          path: release-assets
+          merge-multiple: true
+      - name: Verify release payload is complete
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$(find release-assets -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f -name '*.exe' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f -name '*.dmg' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f -name '*.zip' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f -name 'SBOM.spdx.json' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f -name 'SHA256SUMS.txt' -print -quit)"
+          find release-assets -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+      - name: Create draft GitHub Release with all platform assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Browser C ${{ github.ref_name }}
+          draft: true
+          prerelease: true
+          generate_release_notes: true
+          files: release-assets/*
