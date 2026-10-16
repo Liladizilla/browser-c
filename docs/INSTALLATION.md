@@ -1,6 +1,6 @@
 # Install and upgrade Browser C
 
-Browser C is an early desktop browser prototype. Releases are marked as prereleases while cross-platform device testing, code signing/notarization, and upgrade/uninstall checks remain incomplete. Download only from the [official GitHub Releases page](https://github.com/Liladizilla/browser-c/releases).
+Browser C is an early desktop browser prototype. Releases are marked as prereleases while cross-platform device testing, code signing/notarization, and upgrade/uninstall checks remain incomplete. Download only from the [official GitHub Releases page](https://github.com/Liladizilla/browser-c/releases). The project site is [browser-c.vercel.app](https://browser-c.vercel.app). Review the [Privacy Notice](../PRIVACY.md), [Terms of Use](../TERMS.md), and [Security Policy](../SECURITY.md) before use.
 
 ## Choose a package
 
