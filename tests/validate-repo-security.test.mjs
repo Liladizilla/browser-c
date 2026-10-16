@@ -15,3 +15,10 @@ test("repository validator reads each required path directly without a check-the
 test("repository validator continues to reject empty required files", () => {
   assert.match(validator, /if \(!content\.trim\(\)\) failures\.push\(file \+ ': file is empty'\)/);
 });
+
+test("repository validator accepts the configured Debian maintainer metadata", async () => {
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const maintainerPattern = /^[^<>]+ <[^<>@\s]+@[^<>\s]+>$/;
+  assert.match(pkg.build.linux.maintainer, maintainerPattern);
+  assert.ok(validator.includes("[^<>@\\s]+@[^<>\\s]+"));
+});
