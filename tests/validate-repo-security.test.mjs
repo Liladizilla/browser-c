@@ -6,7 +6,7 @@ const validator = await readFile(new URL("../scripts/validate-repo.mjs", import.
 
 test("repository validator reads each required path directly without a check-then-open race", () => {
   assert.match(validator, /import \{ readFile \} from 'node:fs\/promises'/);
-  assert.doesNotMatch(validator, /\\bawait\\s+access\\s*\\(/);
+  assert.doesNotMatch(validator, /\bawait\s+access\s*\(/);
   assert.doesNotMatch(validator, /constants\.R_OK/);
   assert.match(validator, /const content = await readFile\(file, 'utf8'\)/);
   assert.match(validator, /catch \{\s*failures\.push\(file \+ ': required file is missing or unreadable'\);\s*\}/);
