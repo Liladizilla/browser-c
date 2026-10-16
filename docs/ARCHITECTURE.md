@@ -52,6 +52,8 @@ Browser C Desktop App
 - Do not expose broad IPC APIs to websites. Privileged handlers must validate sender, arguments, and allowed actions.
 - Treat URLs, redirects, downloads, file paths, and external protocol requests as untrusted input.
 - Apply explicit navigation rules and prevent privileged browser UI from loading arbitrary remote content.
+- Keep popup windows separate from trusted chrome; enforce sandboxing, context isolation, disabled Node integration, and HTTP(S)-only navigation. Nested popups are denied.
+- Electron `WebContentsView` occupies a native layer above the renderer DOM. When chrome panels are open, hide the active web-content view until a proper native overlay or composition design is implemented.
 - Ask before granting sensitive permissions; deny by default when no policy exists.
 - Keep secrets out of source control, logs, crash reports, and CI artifacts.
 - Track Electron/Chromium security releases and maintain an update process.
