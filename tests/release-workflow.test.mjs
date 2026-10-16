@@ -9,10 +9,11 @@ test("tagged release packaging covers all supported desktop platforms", () => {
   assert.match(workflow, /push:\s*\n\s*tags:\s*\n\s*- ["']v\*["']/);
   for (const platform of ["linux", "windows", "macos"]) {
     assert.match(workflow, new RegExp(`platform: ${platform}\\b`), `Missing package matrix for ${platform}`);
-    assert.match(workflow, new RegExp(`browser-c-\\$\\{\\{ matrix\\.platform \\}\\}`));
   }
+  assert.match(workflow, /name: browser-c-\$\{\{ matrix\.platform \}\}/);
+  assert.match(workflow, /pattern: browser-c-\*/);
   for (const artifact of ["AppImage", "deb", "exe", "dmg", "zip"]) {
-    assert.ok(workflow.includes(`*.${artifact}`) || workflow.includes(`*. ${artifact}`) || workflow.includes(`-name '*.${artifact}'`), `Missing release asset format: ${artifact}`);
+    assert.ok(workflow.includes(`*.${artifact}`) || workflow.includes(`-name '*.${artifact}'`), `Missing release asset format: ${artifact}`);
   }
 });
 
@@ -26,11 +27,11 @@ test("release assembly waits for every platform and creates a reviewable draft",
 });
 
 test("release assembly requires a complete cross-platform payload and integrity metadata", () => {
-  for (const platform of ["linux", "windows", "macos"]) {
-    assert.ok(workflow.includes(`browser-c-${platform}`), `Missing artifact download for ${platform}`);
-  }
+  assert.match(workflow, /for platform in linux windows macos/);
+  assert.match(workflow, /source="release-downloads\/browser-c-\$\{platform\}"/);
+  assert.match(workflow, /pattern: browser-c-\*/);
   for (const format of ["*.AppImage", "*.deb", "*.exe", "*.dmg", "*.zip"]) {
-    assert.ok(workflow.includes(format), `Missing required format validation for ${format}`);
+    assert.ok(workflow.includes(format), `Missing required format validation: ${format}`);
   }
   assert.match(workflow, /SBOM\.spdx\.json/);
   assert.match(workflow, /SHA256SUMS\.txt/);
