@@ -2,6 +2,16 @@
 
 **Browser C** is an early cross-platform desktop browser prototype targeting Windows, macOS, and Linux, with CharisOS as a future research target. It uses Electron's bundled Chromium engine rather than attempting to implement a new web engine.
 
+## Downloads
+
+Pre-release installers and release notes are published on the [GitHub Releases page](https://github.com/Liladizilla/browser-c/releases). Choose the package for your operating system and architecture. Browser C is still an early prototype; read the release notes and known limitations before using it.
+
+- **Linux:** AppImage or Debian/Ubuntu `.deb`.
+- **Windows:** x64 NSIS installer (`.exe`).
+- **macOS:** DMG installer or ZIP app bundle. Signing/notarization and manual device validation are not yet complete.
+
+See [Installation and upgrade guide](docs/INSTALLATION.md) for setup, checksum verification, troubleshooting, and upgrade notes.
+
 ## Current capabilities
 
 - Multi-tab browsing with keyboard shortcuts and session restore.
@@ -19,11 +29,11 @@ This remains a prototype, not a finished or security-certified daily-use browser
 
 - Electron Chromium supplies the browser engine.
 - Context isolation, sandboxing, disabled Node integration for browser chrome and visited pages, and a narrow preload IPC API.
-- Website-created windows are blocked by default.
+- Website popups can open in restricted child windows with Node integration disabled, context isolation and sandboxing enabled; nested popups and non-HTTP(S) navigation are denied.
 - Navigation is restricted to HTTP and HTTPS.
 - Website permissions are denied unless an explicitly supported permission is allowed for the current app session.
 
-Read [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security model](docs/SECURITY_MODEL.md), and [Release engineering](docs/RELEASES.md).
+Read [Installation](docs/INSTALLATION.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security model](docs/SECURITY_MODEL.md), [Release engineering](docs/RELEASES.md), and [Changelog](CHANGELOG.md).
 
 ## Development
 

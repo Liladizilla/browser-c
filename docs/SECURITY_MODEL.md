@@ -4,7 +4,7 @@
 
 - The local browser chrome is a privileged application surface. Its preload exposes only named browser actions through `contextBridge`.
 - Visited websites are separate `WebContentsView` instances with Node integration disabled, context isolation enabled, sandboxing enabled, and web security enabled.
-- The browser denies website-created windows by default. A future tab/popup policy must be explicit and tested before relaxing this.
+- Website-created popup windows are allowed only through an explicit restricted policy: child windows have context isolation, sandboxing, disabled Node integration, and web security enabled. Nested popups and non-HTTP(S) navigation are denied. This is not a full OAuth compatibility guarantee; provider-specific sign-in must be tested manually.
 - Navigation accepts HTTP and HTTPS only. Address input without a URL is treated as a search query.
 - Unsupported permissions and requests from insecure origins are denied. Supported permission requests use native prompts, with grants scoped to the requesting Electron session and current app run.
 - The local chrome renderer has a restrictive Content Security Policy and no remote script or connection permissions.

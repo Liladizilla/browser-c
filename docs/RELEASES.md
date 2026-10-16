@@ -18,13 +18,13 @@ Keep the package, `SBOM.spdx.json`, and `SHA256SUMS.txt` together. From a Linux/
 sha256sum --check SHA256SUMS.txt
 ```
 
-On Windows PowerShell, verify a named file by comparing its digest with the corresponding line in `SHA256SUMS.txt`:
+On Windows PowerShell, calculate the digest for the exact downloaded file and compare it with the matching filename in `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash .\Browser-C-0.2.0-win32-x64.exe -Algorithm SHA256
+Get-FileHash .\Browser.C-0.2.1-win-x64.exe -Algorithm SHA256
 ```
 
-Use the actual filename produced by the workflow. A checksum detects accidental corruption or mismatches; it does not prove who built a package or protect against an attacker who can replace both the package and its manifest.
+Use the actual filename produced by the release. The expected pattern is `Browser.C-<version>-win-x64.exe`. A checksum detects accidental corruption or mismatches; it does not prove who built a package or protect against an attacker who can replace both the package and its manifest.
 
 When the GitHub CLI is installed and authenticated, verify the build-provenance attestation for a downloaded artifact with:
 
@@ -33,6 +33,18 @@ gh attestation verify ./Browser-C-0.2.0-linux-x64.AppImage --repo Liladizilla/br
 ```
 
 Replace the example path with the exact artifact you downloaded. Repeat for each package you intend to trust. A successful attestation verifies provenance against GitHub's attestation service and repository identity; it does not certify that the application is bug-free, safe to install, signed by an OS vendor, or successfully tested on your machine.
+
+## v0.2.1 release notes
+
+This maintenance release includes the browser popup and chrome-panel fixes merged in PR #75:
+
+- Allows restricted website-created popup windows so supported sign-in and OAuth flows are not unconditionally blocked.
+- Applies sandboxing, context isolation, disabled Node integration, and HTTP(S)-only navigation to popup windows; nested popups are denied.
+- Hides the native web-content surface while Settings, Passwords, or Library panels are open, preventing it from painting over the browser chrome.
+- Constrains Settings and Library panels to the available viewport and uses internal scrolling for long content.
+- Updates installation, verification, security, and release documentation.
+
+**Known limitation:** the page surface is temporarily hidden while these panels are open because Electron's native `WebContentsView` is layered above the renderer DOM. This avoids panel occlusion but is not yet the final overlay design. OAuth behavior depends on the site/provider and still needs hands-on validation. This release remains a prerelease and is not a security-certified daily-use browser.
 
 ## Release gates and limitations
 
