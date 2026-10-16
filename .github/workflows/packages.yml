@@ -83,23 +83,31 @@ jobs:
       contents: write
       actions: read
     steps:
+      - name: Check out release scripts
+        uses: actions/checkout@v7
       - name: Download all validated platform packages
         uses: actions/download-artifact@v7
         with:
           pattern: browser-c-*
-          path: release-assets
-          merge-multiple: true
-      - name: Verify release payload is complete
+          path: release-downloads
+      - name: Assemble one consistent release payload
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p release-assets
+          for platform in linux windows macos; do
+            source="release-downloads/browser-c-${platform}"
+            test -d "$source"
+            find "$source" -maxdepth 1 -type f \( -name '*.AppImage' -o -name '*.deb' -o -name '*.exe' -o -name '*.dmg' -o -name '*.zip' \) -exec cp {} release-assets/ \;
+          done
+          cp release-downloads/browser-c-linux/SBOM.spdx.json release-assets/SBOM.spdx.json
           test -n "$(find release-assets -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
           test -n "$(find release-assets -maxdepth 1 -type f -name '*.deb' -print -quit)"
           test -n "$(find release-assets -maxdepth 1 -type f -name '*.exe' -print -quit)"
           test -n "$(find release-assets -maxdepth 1 -type f -name '*.dmg' -print -quit)"
           test -n "$(find release-assets -maxdepth 1 -type f -name '*.zip' -print -quit)"
-          test -n "$(find release-assets -maxdepth 1 -type f -name 'SBOM.spdx.json' -print -quit)"
-          test -n "$(find release-assets -maxdepth 1 -type f -name 'SHA256SUMS.txt' -print -quit)"
+          test -s release-assets/SBOM.spdx.json
+          (cd release-assets && sha256sum *.AppImage *.deb *.exe *.dmg *.zip SBOM.spdx.json > SHA256SUMS.txt)
           find release-assets -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
       - name: Create draft GitHub Release with all platform assets
         uses: softprops/action-gh-release@v2
