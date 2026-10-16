@@ -1,5 +1,4 @@
-import { access, readFile } from 'node:fs/promises';
-import { constants } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 
 const requiredFiles = [
   'README.md', 'LICENSE', 'CONTRIBUTING.md', 'SECURITY.md',
@@ -12,7 +11,8 @@ const requiredFiles = [
 const failures = [];
 for (const file of requiredFiles) {
   try {
-    await access(file, constants.R_OK);
+    // Open the file directly. A separate access() check introduces a TOCTOU race:
+    // the path can change between the check and this read.
     const content = await readFile(file, 'utf8');
     if (!content.trim()) failures.push(file + ': file is empty');
   } catch {
@@ -24,7 +24,7 @@ try {
   if (pkg.name !== 'browser-c') failures.push('package.json: unexpected package name');
   if (pkg.license !== 'MIT') failures.push('package.json: license must be MIT');
   if (pkg.main !== 'src/main.js') failures.push('package.json: main must point to src/main.js');
-  if (!pkg.build?.linux?.maintainer || !/^[^<>]+ <[^<>@\s]+@[^<>\s]+>$/.test(pkg.build.linux.maintainer)) failures.push('package.json: Linux package maintainer must be configured for Debian builds');
+  if (!pkg.build?.linux?.maintainer || !/^[^<>]+ <[^<>@\\s]+@[^<>\\s]+>$/.test(pkg.build.linux.maintainer)) failures.push('package.json: Linux package maintainer must be configured for Debian builds');
   if (!pkg.scripts?.start || !pkg.scripts?.test || !pkg.scripts?.validate || !pkg.scripts?.check) {
     failures.push('package.json: start, test, validate, and check scripts are required');
   }
