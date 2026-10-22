@@ -110,7 +110,7 @@ jobs:
           (cd release-assets && sha256sum *.AppImage *.deb *.exe *.dmg *.zip SBOM.spdx.json > SHA256SUMS.txt)
           find release-assets -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
       - name: Create draft GitHub Release with all platform assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: Browser C ${{ github.ref_name }}
