@@ -86,7 +86,7 @@ jobs:
       - name: Check out release scripts
         uses: actions/checkout@v7
       - name: Download all validated platform packages
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: browser-c-*
           path: release-downloads
